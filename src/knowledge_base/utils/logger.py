@@ -1,5 +1,5 @@
 """
-Config module
+Logger module
 """
 
 import logging
@@ -25,3 +25,7 @@ def configure_logging(file_path='logs/logs.log', level=logging.INFO, print_to_co
         logger.addHandler(stream_handler)
 
     return logger
+
+
+# initialize logger to facilitate imports in other modules
+logger = configure_logging()

@@ -1,10 +1,10 @@
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from src.knowledge_base.core.models import DocumentResponse, DocumentCreate
 from src.knowledge_base.storage.database import Database
-from src.knowledge_base.utils.config import configure_logging
+from src.knowledge_base.utils.logger import logger
 
-logger = configure_logging()
+
 router = APIRouter(prefix="/content", tags=["database"])
 
 

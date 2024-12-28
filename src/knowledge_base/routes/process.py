@@ -5,11 +5,11 @@ from fastapi import APIRouter, HTTPException, Depends, Path, Query
 from src.knowledge_base.core.models import ProcessResponse, ProcessOptions
 from src.knowledge_base.core.content_manager import ContentManager
 from src.knowledge_base.storage.database import Database
-from src.knowledge_base.utils.config import configure_logging
+from src.knowledge_base.utils.logger import logger
 from src.knowledge_base.extractors.extractor_factory import ExtractorFactory
 from src.knowledge_base.ai.llm_factory import LLMFactory
 
-logger = configure_logging()
+# logger = configure_logging()
 router = APIRouter(prefix="/process", tags=["process"])
 
 

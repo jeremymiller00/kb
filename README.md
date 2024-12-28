@@ -1,6 +1,6 @@
 # Knowledge Base
 
-This is the CLI version of the Knowledge Base App
+This is the Swagger / FASTAPI version of the Knowledge Base App
 This is what I am currently working on
 The GUI version is knowledge-base-loader
 If any visualizations are needed, use Jupyter
@@ -9,7 +9,9 @@ If any visualizations are needed, use Jupyter
 
 ## To Do
 * reset understanding and scope with cli
-* map out the app
+* map out the api
+* fix fast api errors
+* log fastapi outputs to logfiles, not just console
 * Fix obsidian note titles, not dashes or underscore
 * Tests
 * Add safety feature for deletes

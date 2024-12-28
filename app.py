@@ -1,17 +1,16 @@
 import os
+import time
 import uvicorn
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
-from src.knowledge_base.utils.config import configure_logging
+from src.knowledge_base.utils.logger import logger
 from src.knowledge_base.routes import process, database
 
 # Load environment variables
 load_dotenv()
-logger = configure_logging()
 
 # Web content directory
 STATIC_DIR = "src/knowledge_base/static"
@@ -22,16 +21,29 @@ engine = create_engine(DB_CONN_STRING)
 
 # FastAPI app
 app = FastAPI(title="Knowledge Base API")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.middleware("http")
+async def add_request_logging(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    logger.info(f"{request.method} {request.url.path} {response.status_code} completed in {process_time:.3f}s")
+    return response
+
+# For UI
+# app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 
 # Include routers
 app.include_router(process.router)
 app.include_router(database.router)
 
 
+# direct to swagger ui
 @app.get("/")
 def read_index():
-    return FileResponse(STATIC_DIR + "/index.html")
+    return RedirectResponse(url="/docs", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 # # Dependency
