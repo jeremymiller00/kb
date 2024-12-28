@@ -24,7 +24,13 @@ def get_db():
 
 
 @router.get("/{content_id}", response_model=DocumentResponse)
-def get_content(content_id: int, db: Database = Depends(get_db)):
+def get_content(
+    content_id: int,
+    debug: bool = Query(False, description="Use knowledge base test database"),
+    db: Database = Depends(get_db)
+):
+    if debug:
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         document = db.get_content(content_id)
         if not document:
@@ -152,7 +158,13 @@ def process_url(
 # Store content that has already been processed from a url or other source
 #  NOT CURRENTLY USED
 @router.post("/", response_model=DocumentResponse)
-def store_content(document: DocumentCreate, db: Database = Depends(get_db)):
+def store_content(
+    document: DocumentCreate, 
+    debug: bool = Query(False, description="Use knowledge base test database"),
+    db: Database = Depends(get_db)
+):
+    if debug:
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         doc_id = db.store_content(document.model_dump())
         return get_content(doc_id, db)
@@ -164,9 +176,12 @@ def store_content(document: DocumentCreate, db: Database = Depends(get_db)):
 @router.put("/{content_id}", response_model=DocumentResponse)
 def update_content(
     content_id: int, 
-    document: DocumentCreate, 
+    document: DocumentCreate,
+    debug: bool = Query(False, description="Use knowledge base test database"),
     db: Database = Depends(get_db)
 ):
+    if debug:
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         updated = db.update_content(content_id, document.model_dump())
         if not updated:
@@ -178,7 +193,13 @@ def update_content(
 
 
 @router.delete("/{content_id}")
-def delete_content(content_id: int, db: Database = Depends(get_db)):
+def delete_content(
+    content_id: int,
+    debug: bool = Query(False, description="Use knowledge base test database"),
+    db: Database = Depends(get_db)
+):
+    if debug:
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         deleted = db.delete_content(content_id)
         if not deleted:
@@ -193,8 +214,11 @@ def delete_content(content_id: int, db: Database = Depends(get_db)):
 def search_content(
     query: str,
     limit: int = 10,
+    debug: bool = Query(False, description="Use knowledge base test database"),
     db: Database = Depends(get_db)
 ):
+    if debug:
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         results = db.search_content(query, limit=limit)
         return [DocumentResponse(**doc) for doc in results]

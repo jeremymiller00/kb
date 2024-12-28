@@ -1,8 +1,14 @@
 Core Content Management:
 1. `POST /content`
-   - Ingests new content from URLs or files
-   - Parameters: url/file, type (arxiv/github/youtube/etc)
+   - Ingests new content from structured object
+   - A direct write to the database
    - Returns: content_id
+
+1. `POST /content/{url}`
+   - Ingests new content from the web
+   - Extracts keywords, creates AI summary, creates Obsidian markdown
+   - Saves raw JSON file, writes to database, creates new Obsidian note
+   - Returns: Process Response
 
 2. `GET /content/{content_id}`
    - Retrieves specific content by ID
