@@ -1,5 +1,5 @@
+import json
 from typing import List, Optional, Union
-# from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel, HttpUrl, Field, validator
 
@@ -52,7 +52,7 @@ class DocumentResponse(BaseModel):
         return v
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class DocumentCreate(BaseModel):
@@ -65,7 +65,7 @@ class DocumentCreate(BaseModel):
     obsidian_markdown: Optional[str] = Field(None, description="Formatted Obsidian markdown")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "url": "https://example.com",
                 "type": "web",

@@ -10,8 +10,6 @@ If any visualizations are needed, use Jupyter
 ## To Do
 * reset understanding and scope with cli
 * map out the api
-* fix fast api errors
-* log fastapi outputs to logfiles, not just console
 * Fix obsidian note titles, not dashes or underscore
 * Tests
 * Add safety feature for deletes
@@ -24,7 +22,6 @@ If any visualizations are needed, use Jupyter
 * set default llm
 * specify embedding model from cli
 * set default embedding model
-* fix debug mode to use logger instead of -d and my phony debug mode
 * Deal with files that are too long to fit in context window
 * Fallback for LLM failures where I still want the item in my database
  * Semi-manual mode?
