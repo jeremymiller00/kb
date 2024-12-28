@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Process URL - Knowledge Base</title>
+    <link rel="stylesheet" href="/static/styles/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="container">
+        <a href="/static/index.html" class="nav-back">← Back to Home</a>
+        <h1>Process URL</h1>
+        
+        <div class="form-group">
+            <label>URL</label>
+            <input type="text" id="url" placeholder="Enter URL to process">
+        </div>
+        
+        <div class="checkbox-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="debug">
+                Debug Mode
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="work">
+                Work Mode
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="jina">
+                Use Jina
+            </label>
+        </div>
+        
+        <div class="button-container">
+            <button onclick="processURL()">Process URL</button>
+            <div id="loading" class="loading">Processing...</div>
+        </div>
+        
+        <div id="error" class="error"></div>
+        <pre id="results" class="results"></pre>
+    </div>
+
+    <script>
+        async function processURL() {
+            const url = document.getElementById('url').value;
+            const debug = document.getElementById('debug').checked;
+            const work = document.getElementById('work').checked;
+            const jina = document.getElementById('jina').checked;
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('results').textContent = '';
+            
+            try {
+                const encodedUrl = encodeURIComponent(url);
+                const response = await fetch(`/process/${encodedUrl}?debug=${debug}&work=${work}&jina=${jina}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
