@@ -8,10 +8,16 @@ If any visualizations are needed, use Jupyter
 # NOTE set DB_CONN_STRING in .env to use test or prod db
 
 ## To Do
+* Tests
+ * Content Manager - done
+ * Storage
+ * Models
+ * Routes
+ * Utils
+ * AI stuff
 * reset understanding and scope with cli
 * map out the api
 * Fix obsidian note titles, not dashes or underscore
-* Tests
 * Add safety feature for deletes
 * Content Manger (do I want this both at the DB and raw content layer? probably not)
  * clean
