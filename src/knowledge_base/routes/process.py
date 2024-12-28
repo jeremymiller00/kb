@@ -68,23 +68,41 @@ def process_url(
                 timestamp=time_now,
                 obsidian_markdown=obsidian_markdown
             )
+            logger.info(f"[green]Content saved to: {file_path}[/green]\n")
+            logger.info(f"[magenta]Summary: {summary}[/magenta]\n")
+            logger.info(f"[bright_cyan]Keywords: {keywords}[/bright_cyan]\n")
             logger.info(f"Content saved to: {file_path}")
-
             content_manager.create_obsidian_note(file_path, f"{os.getenv('DSV_KB_PATH')}/new-notes/")
             logger.info(f"Obsidian note created for {file_path}")
+            db = Database(logger=logger)
 
-            doc_data = {
-                'url': complete_url,
-                'type': file_type,
-                'timestamp': time_now,
-                'content': content,
-                'summary': summary,
-                'embeddings': embedding,
-                'obsidian_markdown': obsidian_markdown,
-                'keywords': keywords
-            }
-            db.store_content(doc_data)
-            logger.info(f"Content stored in database for: {url}")
+        else:
+            print(f"[green]Content NOT saved to: {file_path}[/green]\n")
+            print(f"[magenta]Summary: {summary}[/magenta]\n")
+            print(f"[bright_cyan]Keywords: {keywords}[/bright_cyan]\n")
+            print(f"[green]Obsidian markdown: {obsidian_markdown}[/green]\n")
+            print(f'[magenta]Embedding: {embedding[:20]}[/magenta]\n')
+            logger.info(f"Content NOT saved to: {file_path} due to execution in debug mode")
+            db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
+
+        # save to database
+        db_name = db.connection_string.split('/')[-1]
+        logger.info(f"Saving record to database: {db_name}")
+        doc_data = {
+            'url': complete_url,
+            'type': file_type,
+            'timestamp': time_now,
+            'content': content,
+            'summary': summary,
+            'embeddings': embedding,
+            'obsidian_markdown': obsidian_markdown,
+            'keywords': keywords
+        }
+        record_id = db.store_content(doc_data)
+        db.close()
+        logger.info("Database connection closed")
+        logger.info(f"Record {record_id} saved to database {db_name}: url: {doc_data['url']}, timestamp: {doc_data['timestamp']}")
+        logger.debug(f"Record {record_id}  saved to database: {record_id}")
 
         return ProcessResponse(
             file_type=file_type,
