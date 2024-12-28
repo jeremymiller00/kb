@@ -102,7 +102,7 @@ class ContentManager():
             prefix = 'huggingface'
             huggingface_id = re.match(
                 huggingface_regex, url
-                ).group(1).replace('/', '-')
+                ).group(1).replace('/', '_')
             file_name = f'{prefix}_{huggingface_id}'
 
         else:

@@ -1,14 +1,14 @@
 Core Content Management:
-1. `POST /content`
-   - Ingests new content from structured object
-   - A direct write to the database
-   - Returns: content_id
-
 1. `POST /content/{url}`
    - Ingests new content from the web
    - Extracts keywords, creates AI summary, creates Obsidian markdown
    - Saves raw JSON file, writes to database, creates new Obsidian note
    - Returns: Process Response
+
+1. `POST /content`
+   - Ingests new content from structured object
+   - A direct write to the database
+   - Returns: content_id
 
 2. `GET /content/{content_id}`
    - Retrieves specific content by ID
@@ -64,5 +64,3 @@ Each endpoint should have:
 - Rate limiting (if needed)
 - Authentication (if you decide to add it later)
 - Detailed logging for debugging
-
-Would you like me to elaborate on any of these endpoints or discuss specific implementation details?
