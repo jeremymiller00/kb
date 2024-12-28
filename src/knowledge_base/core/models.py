@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional, Union
 from sqlalchemy.ext.declarative import declarative_base
-from pydantic import BaseModel, HttpUrl, Field, validator
+from pydantic import BaseModel, HttpUrl, Field, field_validator
 
 Base = declarative_base()
 
@@ -42,7 +42,7 @@ class DocumentResponse(BaseModel):
     keywords: Optional[List[str]] = Field(None, description="Extracted keywords")
     embeddings: Optional[List[float]] = Field(None, description="Vector embeddings")
 
-    @validator('embeddings', pre=True)
+    @field_validator('embeddings', mode='before')
     def parse_embeddings(cls, v):
         if isinstance(v, str):
             try:

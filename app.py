@@ -6,8 +6,9 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
+from src.knowledge_base.routes import content
+from src.knowledge_base.routes import process
 from src.knowledge_base.utils.logger import logger
-from src.knowledge_base.routes import process, database
 
 # Load environment variables
 load_dotenv()
@@ -36,8 +37,8 @@ async def add_request_logging(request: Request, call_next):
 
 
 # Include routers
-app.include_router(process.router)
-app.include_router(database.router)
+# app.include_router(process.router)
+app.include_router(content.router)
 
 
 # direct to swagger ui
