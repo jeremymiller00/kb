@@ -1,10 +1,11 @@
-# Knowledge Base Loader
+# Knowledge Base
 
-Loader for create knowledge base records for web document
+This is the CLI version of the Knowledge Base App
+This is what I am currently working on
+The GUI version is knowledge-base-loader
+If any visualizations are needed, use Jupyter
 
 # NOTE set DB_CONN_STRING in .env to use test or prod db
-
-# NOTE UI stuff is a rabbit holel stick to cli
 
 ## To Do
 * reset understanding and scope with cli
@@ -41,14 +42,6 @@ Loader for create knowledge base records for web document
  * how can I discover new ideas and help make connections, possibly to my writing topics
  * keyword counts, similarity
  * export data
-
- 
-
-# Notes on what the heck I am doing
-This repo is now the home
-knowledge-base-explorer contains code to build a db, which needs to be migrated here: DONE
-knowledgebaseinterface contains code from replit agent as a poc interface using streamlit; don't need it
-kb contains the structure I like, from Claude, but the code is all a mess. use as inspiration
 
 
 ## Jina online html to markdown
@@ -88,11 +81,6 @@ echo "DSV_KB_PATH='/Users/jeremy.miller/Desktop/Data-Science-Vault/Knowledge-bas
 ### Start venv
 ```sh
 pyenv activate knowledge-base-loader-env
-```
-
-## Basic GUI using Swagger
-```sh
-python api.py
 ```
 
 ## CLI
