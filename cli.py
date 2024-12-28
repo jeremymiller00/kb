@@ -15,7 +15,7 @@ from src.knowledge_base.utils.config import configure_logging
 from dotenv import load_dotenv
 
 # Setup
-logger = configure_logging()
+logger = configure_logging(print_to_console=True)
 load_dotenv()
 install(show_locals=True)
 console = Console()
@@ -35,7 +35,7 @@ def process_url(
     ctx: typer.Context,
     url: str = typer.Argument(None, help="URL to process"),
     debug: bool = typer.Option(False, "--debug", "-d", help="Run in debug mode: Do not save the content to disk"),
-    work: bool = typer.Option(False, "--work", "-w", help="Work mode - additional processing"),
+    work: bool = typer.Option(False, "--work", "-w", help="Work mode - use work laptop"),
     jina: bool = typer.Option(False, "--jina", "-j", help="Use Jina for processing web content to markdown"),
 ):
     """Process a single URL and optionally save the content. This is the default command."""
@@ -89,6 +89,8 @@ def process_url(
 
             # Save if requested
             if not debug:
+                # this saves the json file
+                # the raw data from which db can be populated
                 content_manager.save_content(
                     file_type=file_type,
                     file_path=file_path,
@@ -104,6 +106,7 @@ def process_url(
                 print(f"[magenta]Summary: {summary}[/magenta]\n")
                 print(f"[bright_cyan]Keywords: {keywords}[/bright_cyan]\n")
                 logger.info(f"Content saved to: {file_path}")
+                db = Database(logger=logger)
 
             else:
                 print(f"[green]Content NOT saved to: {file_path}[/green]\n")
@@ -112,9 +115,11 @@ def process_url(
                 print(f"[green]Obsidian markdown: {obsidian_markdown}[/green]\n")
                 print(f'[magenta]Embedding: {embedding[:20]}[/magenta]\n')
                 logger.info(f"Content NOT saved to: {file_path} due to execution in debug mode")
+                db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
 
             # save to database
-            db = Database(logger=logger)
+            db_name = db.connection_string.split('/')[-1]
+            logger.info(f"Saving record to database: {db_name}")
             db_record_data = {
                 'url': complete_url,
                 'type': file_type,
@@ -127,7 +132,7 @@ def process_url(
             }
             record_id = db.store_content(db_record_data)
             db.close()
-            logger.info(f"Record {record_id} saved to database: url: {db_record_data['url']}, timestamp: {db_record_data['timestamp']}")
+            logger.info(f"Record {record_id} saved to database {db_name}: url: {db_record_data['url']}, timestamp: {db_record_data['timestamp']}")
             logger.debug(f"Record {record_id}  saved to database: {db_record_data}")
 
     except Exception as e:

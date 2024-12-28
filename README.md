@@ -56,8 +56,8 @@ jina_url = "https://r.jina.ai/<URL>"
 
 1. Create and start virtual environment:
 ```sh
-pyenv virtualenv knowledge-base-loader-env
-pyenv activate knowledge-base-loader-env
+pyenv virtualenv kb-env
+pyenv activate kb-env
 ```
 
 2. Install the required dependencies:
@@ -80,7 +80,7 @@ echo "DSV_KB_PATH='/Users/jeremy.miller/Desktop/Data-Science-Vault/Knowledge-bas
 ## Usage
 ### Start venv
 ```sh
-pyenv activate knowledge-base-loader-env
+pyenv activate kb-env
 ```
 
 ## CLI
