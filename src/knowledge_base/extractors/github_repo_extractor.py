@@ -10,7 +10,8 @@ class GitHubRepoExtractor(ContentExtractor):
         return self.get_github_content(url)
 
     def is_github_repo(self, url):
-        return 'github.com' in url and not url.endswith('.ipynb')
+        # Don't use for notebooks or PDFs
+        return 'github.com' in url and not url.endswith('.ipynb') and not url.endswith('.pdf')
 
     def get_github_content(self, url):
         if url.endswith('/'):

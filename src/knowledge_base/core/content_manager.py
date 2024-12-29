@@ -35,7 +35,7 @@ class ContentManager():
     def __init__(self, logger):
         self.logger = logger
 
-    def get_file_path(self, url):
+    def get_file_path(self, url, force_general=False):
         self.logger.debug(f"Creating file path for URL: {url}")
         time_now = time.time()
         date_time = time.localtime(time_now)
@@ -68,47 +68,50 @@ class ContentManager():
         if not url.startswith('http://') and not url.startswith('https://'):
             url = 'https://' + url
 
-        if 'github.com' in url and 'ipynb' not in url:
-            prefix = 'github'
-            parts = url.split('/')
-            username = parts[3]
-            repo_name = parts[4]
-            file_name = f'{prefix}_{username}_{repo_name}'
+        if not force_general:
+            if 'github.com' in url and 'ipynb' not in url:
+                prefix = 'github'
+                parts = url.split('/')
+                username = parts[3]
+                repo_name = parts[4]
+                file_name = f'{prefix}_{username}_{repo_name}'
+    
+            elif 'github.com' in url and 'ipynb' in url:
+                prefix = 'github_ipynb'
+                parts = url.split('/')
+                username = parts[3]
+                repo_name = parts[4]
+                ipynb_file_name = parts[-1].replace('.ipynb', '')
+                file_name = f'{prefix}_{username}_{repo_name}_{ipynb_file_name}_ipynb'
+    
+            elif 'arxiv.org' in url:
+                prefix = 'arxiv'
+                parts = url.split('/')
+                arxiv_id = parts[-1]
+                file_name = f'{prefix}_{arxiv_id}'
+    
+            elif 'mp.weixin.qq.com' in url:
+                prefix = re.findall('/s/([^/]+)', url)[0]
+                file_name = f'{prefix}'
+    
+            elif re.match(youtube_regex, url):
+                prefix = 'youtube'
+                youtube_id = re.match(youtube_regex, url).group(6)
+                file_name = f'{prefix}_{youtube_id}'
+    
+            elif re.match(huggingface_regex, url):
+                prefix = 'huggingface'
+                huggingface_id = re.match(
+                    huggingface_regex, url
+                    ).group(1).replace('/', '_')
+                file_name = f'{prefix}_{huggingface_id}'
 
-        elif 'github.com' in url and 'ipynb' in url:
-            prefix = 'github_ipynb'
-            parts = url.split('/')
-            username = parts[3]
-            repo_name = parts[4]
-            ipynb_file_name = parts[-1].replace('.ipynb', '')
-            file_name = f'{prefix}_{username}_{repo_name}_{ipynb_file_name}_ipynb'
-
-        elif 'arxiv.org' in url:
-            prefix = 'arxiv'
-            parts = url.split('/')
-            arxiv_id = parts[-1]
-            file_name = f'{prefix}_{arxiv_id}'
-
-        elif 'mp.weixin.qq.com' in url:
-            prefix = re.findall('/s/([^/]+)', url)[0]
-            file_name = f'{prefix}'
-
-        elif re.match(youtube_regex, url):
-            prefix = 'youtube'
-            youtube_id = re.match(youtube_regex, url).group(6)
-            file_name = f'{prefix}_{youtube_id}'
-
-        elif re.match(huggingface_regex, url):
-            prefix = 'huggingface'
-            huggingface_id = re.match(
-                huggingface_regex, url
-                ).group(1).replace('/', '_')
-            file_name = f'{prefix}_{huggingface_id}'
-
-        else:
+        # if none of the above prefixes are detected, use general prefix
+        if force_general or prefix == '':
             file_name = re.sub('[^0-9a-zA-Z]+', '', url)
             if len(file_name) > 100:
                 file_name = file_name[:100]
+
         file_name += '_' + str(int(time_now)) + '.json'
 
         self.logger.debug(f"File path created: {path}/{file_name}")

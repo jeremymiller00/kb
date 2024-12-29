@@ -72,7 +72,9 @@ def process_url(
         # use Jina for PDFs or optionally
         if options.jina or url.endswith('.pdf'):
             url = content_manager.jinafy_url(url)
-        file_type, file_path, time_now, complete_url = content_manager.get_file_path(url)
+            file_type, file_path, time_now, complete_url = content_manager.get_file_path(url, force_general=True)
+        else:
+            file_type, file_path, time_now, complete_url = content_manager.get_file_path(url)
         
         # Extract content
         extractor = ExtractorFactory().get_extractor(complete_url)
