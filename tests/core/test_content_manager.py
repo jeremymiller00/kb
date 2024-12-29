@@ -1,3 +1,7 @@
+""" 
+pytest tests/core/test_content_manager.py -v
+"""
+
 import pytest
 import time
 from unittest.mock import Mock

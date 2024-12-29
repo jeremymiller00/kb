@@ -12,14 +12,25 @@ class YouTubeExtractor(ContentExtractor):
 
     def is_youtube(self, url):
         youtube_regex = (
-            r'(https?://)?(www\.)?'
-            '(youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/v/|youtube\.com/user/[^/]+#p/a/u/1/|youtube\.com/channel/[^/]+/videos|youtube\.com/playlist\?list=|youtube\.com/user/[^/]+#p/c/[^/]+/[^/]+/[^/]+|youtube\.com/user/[^/]+#p/u/[^/]+/[^/]+)'
-            '([^&=%\?]{11})')
-        youtube_regex_match = re.search(youtube_regex, url)
-        if youtube_regex_match:
-            return True
-        else:
-            return False
+            r'(https?://)?(www\.)?(youtube\.com|youtu\.be)'  # Domain
+            r'(/watch\?v=|/embed/|/v/|/shorts/|/'           # Path options
+            r'|/.*\?v=)'                                    # Query param
+            r'([a-zA-Z0-9_-]{11})'                         # Video ID
+        )
+        youtube_regex_match = re.match(youtube_regex, url)
+        return bool(youtube_regex_match)
+    
+    # Old version from Hongliang
+    # def is_youtube(self, url):
+    #     youtube_regex = (
+    #         r'(https?://)?(www\.)?'
+    #         '(youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/v/|youtube\.com/user/[^/]+#p/a/u/1/|youtube\.com/channel/[^/]+/videos|youtube\.com/playlist\?list=|youtube\.com/user/[^/]+#p/c/[^/]+/[^/]+/[^/]+|youtube\.com/user/[^/]+#p/u/[^/]+/[^/]+)'
+    #         '([^&=%\?]{11})')
+    #     youtube_regex_match = re.search(youtube_regex, url)
+    #     if youtube_regex_match:
+    #         return True
+    #     else:
+    #         return False
 
     def get_youtube_transcript_content(self, url):
         video_id = self.extract_video_id(url)
