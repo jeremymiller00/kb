@@ -8,33 +8,32 @@ If any visualizations are needed, use Jupyter
 # NOTE set DB_CONN_STRING in .env to use test or prod db
 
 ## To Do
-* Tests
+* Basic Unit Tests
  * Content Manager - done
  * Storage
  * Models
  * Routes
  * Utils
  * AI stuff
-* reset understanding and scope with cli
 * map out the api
 * Fix obsidian note titles, not dashes or underscore
-* Add safety feature for deletes
-* Content Manger (do I want this both at the DB and raw content layer? probably not)
+* Add safety feature for deletes - must enter a code as a url parameter
+* Content Manager functions
  * clean
  * dedupe
  * delete
  * update
-* specify llm from cli
-* set default llm
-* specify embedding model from cli
-* set default embedding model
+* specify llm from API
+* get default embedding model from API
+* set default embedding model from API
+* specify embedding model from API
+* get default embedding model from API
+* set default embedding model from API
 * Deal with files that are too long to fit in context window
 * Fallback for LLM failures where I still want the item in my database
  * Semi-manual mode?
 * Method for deduping the db
 * Way to complete missing data, such as ai summary or embeddings
-* New embedding model, recalculate
-* option to set logging level from cli
 * Claude integration
 * Local embedding model option
 * Local summarization model option
