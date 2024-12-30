@@ -16,11 +16,17 @@ If any visualizations are needed, use Jupyter
  * Utils
  * AI stuff
 * be able to add items from work laptop, even though DB lives on personal laptop
+ * SOLUTION: switch to SQLite, store db file in repository
  * Try catch DB insert
  * Somehow mark that it wasn't inserted
  * At each new insert, check for uninserted
  * Manually trigger check for uninserted
 * put constants in a database table, like default llm, dsv_kb_path, etc
+ * Like Academic AI Platform
+ * Use configs to update software and launch
+ * Data driven build and update
+ * Configs live in a database
+ * API to interact with the database
 * map out the api
 * Fix obsidian note titles, not dashes or underscore
 * Add safety feature for deletes - must enter a code as a url parameter
