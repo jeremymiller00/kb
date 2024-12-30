@@ -69,10 +69,16 @@ pyenv activate kb-env
 pip install -r requirements.txt
 ```
 
-3. Set up your OpenAI API key by placing it in .env:
+3. Set up your .env file with the following constants:
 ```sh
 touch .env
-echo "OPENAI_API_KEY='key'" > .env
+OPENAI_API_KEY="<key>"
+DSV_KB_PATH="<path to Data-Science-Vault/Knowledge-base>" # for obsidian integration
+DB_CONN_STRING="<postgres connection string for prod db>"
+TEST_DB_CONN_STRING="<postgres connection string for test db>"
+DATA_DIR="<typically the same as the DSV_KB_PATH>"
+LLM_MODEL_NAME="<default llm>"
+
 ```
 
 4. Update DSV_KB_PATH in .env with absolute path
