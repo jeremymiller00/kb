@@ -15,6 +15,7 @@ If any visualizations are needed, use Jupyter
  * Routes
  * Utils
  * AI stuff
+* put constants in a database table, like default llm, dsv_kb_path, etc
 * map out the api
 * Fix obsidian note titles, not dashes or underscore
 * Add safety feature for deletes - must enter a code as a url parameter
