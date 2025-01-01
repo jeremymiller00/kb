@@ -1,6 +1,5 @@
 import os
 import time
-import sqlite3
 import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.responses import RedirectResponse
@@ -17,26 +16,13 @@ load_dotenv()
 # Web content directory
 STATIC_DIR = "src/knowledge_base/static"
 
-# # Database connection postgres
-# DB_CONN_STRING = os.getenv("DB_CONN_STRING")
-# engine = create_engine(DB_CONN_STRING)
-
 # Database connection
-DB_PATH = os.getenv("DB_PATH", "knowledge_base.db")
-db = sqlite3.connect(DB_PATH, check_same_thread=False)
-db.row_factory = sqlite3.Row
+DB_CONN_STRING = os.getenv("DB_CONN_STRING")
+engine = create_engine(DB_CONN_STRING)
 
 # FastAPI app
 app = FastAPI(title="Knowledge Base API")
 
-@app.on_event("startup")
-async def startup():
-    # Enable foreign keys
-    db.execute("PRAGMA foreign_keys = ON")
-
-@app.on_event("shutdown")
-async def shutdown():
-    db.close()
 
 @app.middleware("http")
 async def add_request_logging(request: Request, call_next):

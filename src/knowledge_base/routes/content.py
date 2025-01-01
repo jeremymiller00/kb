@@ -14,30 +14,13 @@ from src.knowledge_base.ai.llm_factory import LLMFactory
 
 router = APIRouter(prefix="/content", tags=["Content"])
 
+
 def get_db():
-    # Set up database path
-    # db_dir = os.getenv("DB_DIR", "database")
-    # db_path = str(Path(db_dir) / "knowledge_base.db")
-    # os.makedirs(db_dir, exist_ok=True)
-    
-    # Initialize database
-    db = Database(
-        logger=logger,
-        # just us the default from the constructor
-        # db_path=db_path
-    )
+    db = Database(logger=logger)
     try:
         yield db
     finally:
-        if hasattr(db, 'close'):
-            db.close()
-
-# def get_db():
-#     db = Database(logger=logger)
-#     try:
-#         yield db
-#     finally:
-#         db.close()
+        db.close()
 
 
 @router.get("/{content_id}", response_model=DocumentResponse)
@@ -47,7 +30,7 @@ def get_content(
     db: Database = Depends(get_db)
 ):
     if debug:
-        db = Database(logger=logger, db_path=os.getenv('TEST_DB_PATH'))
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         document = db.get_content(content_id)
         if not document:
@@ -56,14 +39,25 @@ def get_content(
     except Exception as e:
         logger.error(f"Error retrieving document: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
 
 
+# @router.get("/", response_model=List[DocumentResponse])
+# async def get_all_content(
+#     skip: int = 0, 
+#     limit: int = 100, 
+#     db: Database = Depends(get_db)
+# ):
+#     try:
+#         documents = await db.get_all_content(skip=skip, limit=limit)
+#         return [DocumentResponse(**doc) for doc in documents]
+#     except Exception as e:
+#         logger.error(f"Error retrieving documents: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{url:path}", response_model=ProcessResponse)
 def process_url(
     url: str = Path(..., description="URL to process"),
-    debug: bool = Query(False, description="Run in debug mode - do not save json, use test knowledge base database"),
+    debug: bool = Query(False, description="Run in debug mode - do not save content"),
     work: bool = Query(False, description="Work mode - use work latptop"),
     jina: bool = Query(False, description="Use Jina for preparing web content"),
     db: Database = Depends(get_db)
@@ -71,10 +65,7 @@ def process_url(
     try:
         # Create options from query parameters
         options = ProcessOptions(debug=debug, work=work, jina=jina)
-
-        if options.debug:
-            db = Database(logger=logger, db_path=os.getenv('TEST_DB_PATH'))   
-     
+        
         # Initialize components
         content_manager = ContentManager(logger=logger)
         url = content_manager.clean_url(url)
@@ -117,8 +108,7 @@ def process_url(
             logger.info(f"Content saved to: {file_path}")
             content_manager.create_obsidian_note(file_path, f"{os.getenv('DSV_KB_PATH')}/new-notes/")
             logger.info(f"Obsidian note created for {file_path}")
-            # db = Database(logger=logger)
-            db_name = "knowledge_base"
+            db = Database(logger=logger)
 
         else:
             print(f"[green]Content NOT saved to: {file_path}[/green]\n")
@@ -127,12 +117,10 @@ def process_url(
             print(f"[green]Obsidian markdown: {obsidian_markdown}[/green]\n")
             print(f'[magenta]Embedding: {embedding[:20]}[/magenta]\n')
             logger.info(f"Content NOT saved to: {file_path} due to execution in debug mode")
-            # db = Database(logger=logger, db_path=os.getenv('TEST_DB_PATH'))
-            db_name = "test_knowledge_base"
-            # db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
+            db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
 
         # save to database
-        # db_name = db.connection_string.split('/')[-1]
+        db_name = db.connection_string.split('/')[-1]
         logger.info(f"Saving record to database: {db_name}")
         doc_data = {
             'url': complete_url,
@@ -170,26 +158,20 @@ def process_url(
 
 
 # Store content that has already been processed from a url or other source
-# Must be structured data
 #  NOT CURRENTLY USED
-@router.post("/", response_model=ProcessResponse)
-async def create_content(
-    document: DocumentCreate,
-    options: ProcessOptions = None,
+@router.post("/", response_model=DocumentResponse)
+def store_content(
+    document: DocumentCreate, 
+    debug: bool = Query(False, description="Use knowledge base test database"),
     db: Database = Depends(get_db)
 ):
+    if debug:
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
-        extractor = ExtractorFactory.create_extractor(document.type)
-        llm = LLMFactory.create_llm()
-        content_manager = ContentManager(db=db, extractor=extractor, llm=llm)
-        
-        result = await content_manager.process_document(
-            document=document,
-            options=options
-        )
-        return ProcessResponse(**result)
+        doc_id = db.store_content(document.model_dump())
+        return get_content(doc_id, db)
     except Exception as e:
-        logger.error(f"Error processing document: {traceback.format_exc()}")
+        logger.error(f"Error storing document: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -201,7 +183,7 @@ def update_content(
     db: Database = Depends(get_db)
 ):
     if debug:
-        db = Database(logger=logger, db_path=os.getenv('TEST_DB_PATH'))
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         updated = db.update_content(content_id, document.model_dump())
         if not updated:
@@ -211,20 +193,22 @@ def update_content(
         logger.error(f"Error updating document: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.delete("/{content_id}")
 def delete_content(
-    content_id: int = Path(..., description="The ID of the content to delete"),
+    content_id: int,
     debug: bool = Query(False, description="Use knowledge base test database"),
     db: Database = Depends(get_db)
 ):
     if debug:
-        db = Database(logger=logger, db_path=os.getenv('TEST_DB_PATH'))
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
-        if db.delete_content(content_id):
-            return {"message": f"Content {content_id} deleted successfully"}
-        raise HTTPException(status_code=404, detail="Content not found")
+        deleted = db.delete_content(content_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Document not found")
+        return {"message": "Document deleted successfully"}
     except Exception as e:
-        logger.error(f"Error deleting content: {e}")
+        logger.error(f"Error deleting document: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -236,101 +220,10 @@ def search_content(
     db: Database = Depends(get_db)
 ):
     if debug:
-        db = Database(logger=logger, db_path=os.getenv('TEST_DB_PATH'))
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
         results = db.search_content(query, limit=limit)
         return [DocumentResponse(**doc) for doc in results]
     except Exception as e:
         logger.error(f"Error searching documents: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# postgres stuff
-# @router.get("/", response_model=List[DocumentResponse])
-# async def get_all_content(
-#     skip: int = 0, 
-#     limit: int = 100, 
-#     db: Database = Depends(get_db)
-# ):
-#     try:
-#         documents = await db.get_all_content(skip=skip, limit=limit)
-#         return [DocumentResponse(**doc) for doc in documents]
-#     except Exception as e:
-#         logger.error(f"Error retrieving documents: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @router.get("/{content_id}", response_model=DocumentResponse)
-# def get_content(
-#     content_id: int,
-#     debug: bool = Query(False, description="Use knowledge base test database"),
-#     db: Database = Depends(get_db)
-# ):
-#     if debug:
-#         db = Database(logger=logger, db_path=os.getenv('TEST_DB_PATH'))
-#     try:
-#         document = db.get_content(content_id)
-#         if not document:
-#             raise HTTPException(status_code=404, detail="Document not found")
-#         return DocumentResponse(**document)
-#     except Exception as e:
-#         logger.error(f"Error retrieving document: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @router.post("/", response_model=DocumentResponse)
-# def store_content(
-#     document: DocumentCreate, 
-#     debug: bool = Query(False, description="Use knowledge base test database"),
-#     db: Database = Depends(get_db)
-# ):
-#     if debug:
-#         db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
-#     try:
-#         doc_id = db.store_content(document.model_dump())
-#         return get_content(doc_id, db)
-#     except Exception as e:
-#         logger.error(f"Error storing document: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @router.delete("/{content_id}")
-# def delete_content(
-#     content_id: int,
-#     debug: bool = Query(False, description="Use knowledge base test database"),
-#     db: Database = Depends(get_db)
-# ):
-#     if debug:
-#         db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
-#     try:
-#         deleted = db.delete_content(content_id)
-#         if not deleted:
-#             raise HTTPException(status_code=404, detail="Document not found")
-#         return {"message": "Document deleted successfully"}
-#     except Exception as e:
-#         logger.error(f"Error deleting document: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @router.delete("/{content_id}")
-# def delete_content(
-#     content_id: int = Path(..., description="The ID of the content to delete"),
-#     db: Database = Depends(get_db)
-# ):
-#     try:
-#         if db.delete_content(content_id):
-#             return {"message": f"Content {content_id} deleted successfully"}
-#         raise HTTPException(status_code=404, detail="Content not found")
-#     except Exception as e:
-#         logger.error(f"Error deleting content: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @router.get("/", response_model=List[DocumentResponse])
-# def list_content(
-#     type: str = None,
-#     limit: int = 10,
-#     offset: int = 0,
-#     db: Database = Depends(get_db)
-# ):
-#     try:
-#         documents = db.list_content(type=type, limit=limit, offset=offset)
-#         return [DocumentResponse(**doc) for doc in documents]
-#     except Exception as e:
-#         logger.error(f"Error listing documents: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
