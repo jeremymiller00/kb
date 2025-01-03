@@ -5,6 +5,10 @@ This is what I am currently working on
 The GUI version is knowledge-base-loader
 If any visualizations are needed, use Jupyter
 
+The CLI is useful for when the database is not present
+As of 2025-01-03, workflow is to add articles via cli, worry about database later
+Building the DB is easy and fast
+
 # NOTE set DB_CONN_STRING in .env to use test or prod db
 
 ## To Do
