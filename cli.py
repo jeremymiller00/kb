@@ -10,7 +10,7 @@ from src.knowledge_base.extractors.extractor_factory import ExtractorFactory
 from src.knowledge_base.core.content_manager import ContentManager
 from src.knowledge_base.ai.llm_factory import LLMFactory
 from src.knowledge_base.storage.database import Database
-from src.knowledge_base.utils.config import configure_logging
+from src.knowledge_base.utils.logger import configure_logging
 
 from dotenv import load_dotenv
 

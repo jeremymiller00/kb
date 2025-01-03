@@ -1,3 +1,9 @@
+Keyword endpoints?
+Search by keyword
+Get keyword similairty
+Get keywords for doc
+
+
 Core Content Management:
 1. `POST /content/{url}`
    - Ingests new content from the web
