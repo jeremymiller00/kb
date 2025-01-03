@@ -106,7 +106,7 @@ def process_url(
                 print(f"[magenta]Summary: {summary}[/magenta]\n")
                 print(f"[bright_cyan]Keywords: {keywords}[/bright_cyan]\n")
                 logger.info(f"Content saved to: {file_path}")
-                db = Database(logger=logger)
+                # db = Database(logger=logger)
 
             else:
                 print(f"[green]Content NOT saved to: {file_path}[/green]\n")
@@ -115,25 +115,25 @@ def process_url(
                 print(f"[green]Obsidian markdown: {obsidian_markdown}[/green]\n")
                 print(f'[magenta]Embedding: {embedding[:20]}[/magenta]\n')
                 logger.info(f"Content NOT saved to: {file_path} due to execution in debug mode")
-                db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
+                # db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
 
-            # save to database
-            db_name = db.connection_string.split('/')[-1]
-            logger.info(f"Saving record to database: {db_name}")
-            db_record_data = {
-                'url': complete_url,
-                'type': file_type,
-                'timestamp': time_now,
-                'content': content,
-                'summary': summary,
-                'embeddings': embedding,
-                'obsidian_markdown': obsidian_markdown,
-                'keywords': keywords
-            }
-            record_id = db.store_content(db_record_data)
-            db.close()
-            logger.info(f"Record {record_id} saved to database {db_name}: url: {db_record_data['url']}, timestamp: {db_record_data['timestamp']}")
-            logger.debug(f"Record {record_id}  saved to database: {db_record_data}")
+            # # save to database
+            # db_name = db.connection_string.split('/')[-1]
+            # logger.info(f"Saving record to database: {db_name}")
+            # db_record_data = {
+            #     'url': complete_url,
+            #     'type': file_type,
+            #     'timestamp': time_now,
+            #     'content': content,
+            #     'summary': summary,
+            #     'embeddings': embedding,
+            #     'obsidian_markdown': obsidian_markdown,
+            #     'keywords': keywords
+            # }
+            # record_id = db.store_content(db_record_data)
+            # db.close()
+            # logger.info(f"Record {record_id} saved to database {db_name}: url: {db_record_data['url']}, timestamp: {db_record_data['timestamp']}")
+            # logger.debug(f"Record {record_id}  saved to database: {db_record_data}")
 
     except Exception as e:
         logger.error(f"Error processing URL: {str(e)}")
