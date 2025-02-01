@@ -19,8 +19,11 @@ Building the DB is easy and fast
  * Routes
  * Utils
  * AI stuff
-* be able to add items from work laptop, even though DB lives on personal laptop
- * SOLUTION: switch to SQLite, store db file in repository
+* Discovery module
+ * Find related content based on some input
+  * topic, title, keyword, relationship
+ * recommend content
+* be able to add items from work laptop, even though DB lives on personal laptop - how important is this really?
  * Try catch DB insert
  * Somehow mark that it wasn't inserted
  * At each new insert, check for uninserted
@@ -31,7 +34,6 @@ Building the DB is easy and fast
  * Data driven build and update
  * Configs live in a database
  * API to interact with the database
-* map out the api
 * Fix obsidian note titles, not dashes or underscore
 * Add safety feature for deletes - must enter a code as a url parameter
 * Content Manager functions
@@ -39,6 +41,8 @@ Building the DB is easy and fast
  * dedupe
  * delete
  * update
+ * Method for deduping the db
+ * Way to complete missing data, such as ai summary or embeddings
 * specify llm from API
 * get default embedding model from API
 * set default embedding model from API
@@ -48,12 +52,11 @@ Building the DB is easy and fast
 * Deal with files that are too long to fit in context window
 * Fallback for LLM failures where I still want the item in my database
  * Semi-manual mode?
-* Method for deduping the db
-* Way to complete missing data, such as ai summary or embeddings
 * Claude integration
 * Local embedding model option
 * Local summarization model option
 * UI
+ * View article content
  * basic db stats
  * clusters of articles, top, recent
  * search, semantic
