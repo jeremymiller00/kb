@@ -1,9 +1,11 @@
 import json
 from typing import List, Optional, Union
-from sqlalchemy.ext.declarative import declarative_base
-from pydantic import BaseModel, HttpUrl, Field, field_validator
+from sqlalchemy.orm import DeclarativeBase  # New import
+from pydantic import BaseModel, HttpUrl, Field, field_validator, ConfigDict
 
-Base = declarative_base()
+# Updated base class declaration
+class Base(DeclarativeBase):
+    pass
 
 
 # SQLAlchemy Models
@@ -42,6 +44,8 @@ class DocumentResponse(BaseModel):
     keywords: Optional[List[str]] = Field(None, description="Extracted keywords")
     embeddings: Optional[List[float]] = Field(None, description="Vector embeddings")
 
+    model_config = ConfigDict(from_attributes=True)
+
     @field_validator('embeddings', mode='before')
     def parse_embeddings(cls, v):
         if isinstance(v, str):
@@ -50,9 +54,6 @@ class DocumentResponse(BaseModel):
             except:
                 return [float(x) for x in v.strip('[]').split(',')]
         return v
-
-    class Config:
-        from_attributes = True
 
 
 class DocumentCreate(BaseModel):
@@ -64,8 +65,8 @@ class DocumentCreate(BaseModel):
     embeddings: Optional[List[float]] = Field(None, description="Vector embeddings")
     obsidian_markdown: Optional[str] = Field(None, description="Formatted Obsidian markdown")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "url": "https://example.com",
                 "type": "web",
@@ -76,3 +77,4 @@ class DocumentCreate(BaseModel):
                 "obsidian_markdown": "# Example\nContent"
             }
         }
+    )

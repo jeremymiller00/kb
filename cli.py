@@ -1,3 +1,7 @@
+'''
+Simple CLI for processing URLs and saving content to disk and database
+'''
+
 import os
 from pathlib import Path
 

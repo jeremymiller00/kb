@@ -1,3 +1,8 @@
+'''
+FastAPI app for backend api
+'''
+
+
 import os
 import time
 import uvicorn
