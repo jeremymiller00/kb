@@ -1,15 +1,21 @@
 import requests
 from bs4 import BeautifulSoup
+import re
+from typing import Optional
 
 from .base import ContentExtractor
-# from src.knowledge_base.utils.config import configure_logging
-
-# self.logger = configure_logging()
-
+from src.knowledge_base.utils.logger import logger
 
 class HTMLExtractor(ContentExtractor):
+    def __init__(self):
+        self.logger = logger
+
     def can_handle(self, url: str) -> bool:
-        return True  # Default fallback
+        if not url:
+            return False
+            
+        url_pattern = r'^https?:\/\/'
+        return bool(re.match(url_pattern, url))
     
     def extract(self, url: str, work=None) -> str:
         return self.get_html_content(url, work=work)

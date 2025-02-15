@@ -2,6 +2,7 @@
 Simple CLI for processing URLs and saving content to disk and database
 '''
 
+import logging
 import os
 from pathlib import Path
 
@@ -49,7 +50,9 @@ def process_url(
     if not url:
         raise typer.BadParameter("URL is required when not using subcommands")
     if debug:
+        logger.setLevel(logging.DEBUG)  # Set debug level
         logger.info("Executing in debug mode; content will not be saved.\n")
+        logger.debug("Debug logging enabled")
 
     if work:
         logger.info("Executing from work laptop. Using local ssl certificate.\n")
