@@ -10,6 +10,20 @@ As of 2025-01-03, workflow is to add articles via cli, worry about database late
 Building the DB is easy and fast
 
 # NOTE set DB_CONN_STRING in .env to use test or prod db
+## Features to Build
+* Chatbot Eval Creator
+ * Upload PRD, DB schema
+ * Produce sample Q and As
+ * Rate them and re-run
+* Data Viewer
+ * Hamel [Blog](https://hamel.dev/blog/posts/field-guide/#the-most-important-ai-investment-a-simple-data-viewer)
+ * Here’s what makes a good data annotation tool:
+ * Show all context in one place. Don’t make users hunt through different systems to understand what happened.
+ * Make feedback trivial to capture. One-click correct/incorrect buttons beat lengthy forms.
+ * Capture open-ended feedback. This lets you capture nuanced issues that don’t fit into a pre-defined taxonomy.
+ * Enable quick filtering and sorting. Teams need to easily dive into specific error types. In the example above, NurtureBoss can quickly filter by the channel (voice, text, chat) or the specific property they want to look at quickly.
+ * Have hotkeys that allow users to navigate between data examples and annotate without clicking.
+
 
 ## To Do
 * Basic Unit Tests
@@ -133,6 +147,33 @@ _Might not work with youtube and github_
 ### Process batch of URLs
 ```sh
 python cli.py process batch <urls.txt>
+```
+
+### List and browse data files
+```sh
+# List all data files (default shows 20 most recent)
+python cli.py data list
+
+# Filter by file type
+python cli.py data list --type github
+
+# Show only files from last 7 days
+python cli.py data list --days 7
+
+# View file details in pretty format
+python cli.py data view /path/to/file.json
+
+# View raw JSON content
+python cli.py data view /path/to/file.json --format raw
+
+# View as markdown
+python cli.py data view /path/to/file.json --format markdown
+
+# Show stats about knowledge base files
+python cli.py data stats
+
+# List all file types
+python cli.py data types
 ```
 
 ### Set up database

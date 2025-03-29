@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 
 from src.knowledge_base.routes import content
 from src.knowledge_base.routes import process
+from src.knowledge_base.routes import data
 from src.knowledge_base.utils.logger import logger
 
 # Load environment variables
@@ -44,6 +45,7 @@ async def add_request_logging(request: Request, call_next):
 # Include routers
 # app.include_router(process.router)
 app.include_router(content.router)
+app.include_router(data.router)
 
 
 # direct to swagger ui
