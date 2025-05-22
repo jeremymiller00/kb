@@ -13,12 +13,12 @@ from rich import print
 from rich.console import Console
 from rich.traceback import install
 
-from src.knowledge_base.extractors.extractor_factory import ExtractorFactory
-from src.knowledge_base.core.content_manager import ContentManager
-from src.knowledge_base.ai.llm_factory import LLMFactory
-from src.knowledge_base.storage.database import Database
-from src.knowledge_base.utils.logger import configure_logging
-from src.knowledge_base.utils.data_viewer import DataViewer
+from knowledge_base.extractors.extractor_factory import ExtractorFactory
+from knowledge_base.core.content_manager import ContentManager
+from knowledge_base.ai.llm_factory import LLMFactory
+from knowledge_base.storage.database import Database
+from knowledge_base.utils.logger import configure_logging
+from knowledge_base.utils.data_viewer import DataViewer
 
 from dotenv import load_dotenv
 
