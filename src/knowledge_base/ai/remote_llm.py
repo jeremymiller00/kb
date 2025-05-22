@@ -8,7 +8,7 @@ from functools import partial
 from dotenv import load_dotenv
 load_dotenv()
 
-from src.knowledge_base.utils.prompts import PROMPTS
+from knowledge_base.utils.prompts import PROMPTS
 
 
 class RemoteLLM:

@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
-from src.knowledge_base.storage.database import Database
-from src.knowledge_base.utils.config import configure_logging
+from knowledge_base.storage.database import Database
+from knowledge_base.utils.config import configure_logging
 
 
 load_dotenv()

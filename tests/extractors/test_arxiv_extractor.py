@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from src.knowledge_base.extractors.arxiv_extractor import ArxivExtractor
+from knowledge_base.extractors.arxiv_extractor import ArxivExtractor
 
 @pytest.fixture
 def mock_logger():

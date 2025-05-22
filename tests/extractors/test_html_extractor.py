@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from src.knowledge_base.extractors.html_extractor import HTMLExtractor
+from knowledge_base.extractors.html_extractor import HTMLExtractor
 
 @pytest.fixture
 def mock_logger():

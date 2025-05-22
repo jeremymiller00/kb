@@ -21,7 +21,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Union
 
-from src.knowledge_base.utils.logger import logger
+from knowledge_base.utils.logger import logger
 
 
 class DataViewer:

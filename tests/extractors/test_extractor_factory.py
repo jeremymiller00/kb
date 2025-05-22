@@ -3,13 +3,13 @@ pytest tests/extractors/test_extractor_factory.py -v
 """
 
 import pytest
-from src.knowledge_base.extractors.extractor_factory import ExtractorFactory
-from src.knowledge_base.extractors.arxiv_extractor import ArxivExtractor
-from src.knowledge_base.extractors.github_repo_extractor import GitHubRepoExtractor
-from src.knowledge_base.extractors.github_notebook_extractor import GitHubNotebookExtractor
-from src.knowledge_base.extractors.youtube_extractor import YouTubeExtractor
-from src.knowledge_base.extractors.huggingface_extractor import HuggingFaceExtractor
-from src.knowledge_base.extractors.html_extractor import HTMLExtractor
+from knowledge_base.extractors.extractor_factory import ExtractorFactory
+from knowledge_base.extractors.arxiv_extractor import ArxivExtractor
+from knowledge_base.extractors.github_repo_extractor import GitHubRepoExtractor
+from knowledge_base.extractors.github_notebook_extractor import GitHubNotebookExtractor
+from knowledge_base.extractors.youtube_extractor import YouTubeExtractor
+from knowledge_base.extractors.huggingface_extractor import HuggingFaceExtractor
+from knowledge_base.extractors.html_extractor import HTMLExtractor
 
 @pytest.fixture
 def factory():

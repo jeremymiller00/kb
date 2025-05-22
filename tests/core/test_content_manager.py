@@ -5,7 +5,7 @@ pytest tests/core/test_content_manager.py -v
 import pytest
 import time
 from unittest.mock import Mock
-from src.knowledge_base.core.content_manager import ContentManager
+from knowledge_base.core.content_manager import ContentManager
 
 @pytest.fixture
 def mock_logger():

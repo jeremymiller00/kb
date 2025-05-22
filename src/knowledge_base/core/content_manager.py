@@ -183,7 +183,133 @@ class ContentManager():
 
         self.logger.info(f"Obsidian note created: {output_path}")
         return
-    
+
+    def _standardize_title_for_obsidian(self, title: str, max_length: int = 80) -> str:
+        """
+        Standardizes a title for Obsidian note filenames and H1 headers.
+        - Replaces dashes and underscores with spaces.
+        - Removes most non-alphanumeric characters (keeps spaces).
+        - Collapses multiple spaces to one.
+        - Strips leading/trailing spaces.
+        - Limits length.
+        """
+        if not title:
+            return "Untitled Note"
+
+        # Replace dashes and underscores with spaces
+        title = title.replace('-', ' ').replace('_', ' ')
+        
+        # Keep alphanumeric characters and spaces, remove others
+        # This also handles many common URL-encoded chars like %20 (becomes space then cleaned)
+        title = re.sub(r'[^\w\s]', '', title)
+        
+        # Collapse multiple spaces to a single space
+        title = re.sub(r'\s+', ' ', title).strip()
+        
+        # Limit length
+        if len(title) > max_length:
+            title = title[:max_length].strip()
+            # Try to cut at a word boundary if possible
+            if ' ' in title and len(title) == max_length: # Check if it was exactly max_length before potential rfind
+                last_space = title.rfind(' ')
+                if last_space > max_length / 2: # Only cut if it doesn't make the title too short
+                    title = title[:last_space]
+
+        if not title: # If all characters were removed or title became empty after truncation
+            return "Untitled Note"
+            
+        return title.strip()
+
+    def create_obsidian_note(self, json_file_path, output_directory):
+        self.logger.debug(f"Creating Obsidian note from JSON file: {json_file_path}")
+        with open(json_file_path, 'r') as file:
+            doc_data = json.load(file)
+        self.logger.debug(f"Loaded JSON data: {doc_data}")
+
+        url = doc_data.get('url', '')
+        obsidian_markdown_content = doc_data.get('obsidian_markdown', '')
+        
+        # Attempt to extract title from H1 in markdown content
+        h1_title = None
+        if obsidian_markdown_content:
+            lines = obsidian_markdown_content.split('\n', 1)
+            if lines and lines[0].startswith('# '):
+                h1_title = lines[0][2:].strip() # Get text after '# '
+        
+        base_title_for_filename = "Untitled" # Default
+        if h1_title:
+            base_title_for_filename = h1_title
+            self.logger.debug(f"Using H1 title from markdown content: '{h1_title}'")
+        elif url:
+            # Fallback to URL parsing if no H1 title
+            # Try to get a meaningful part from the URL path
+            parsed_url = urlparse(url)
+            path_parts = [part for part in parsed_url.path.split('/') if part]
+            if path_parts:
+                # Use the last non-numeric part of the path, or the last part if all are numeric/single
+                # This is a heuristic to get a more meaningful title than just an ID
+                name_part = path_parts[-1]
+                # If it looks like a common file extension (e.g., .html, .pdf), remove it
+                name_part, _ = os.path.splitext(name_part)
+                if len(path_parts) > 1 and name_part.isdigit(): # If last part is just an ID, try parent
+                    parent_part = path_parts[-2]
+                    parent_part, _ = os.path.splitext(parent_part)
+                    if not parent_part.isdigit(): # Don't use if parent is also just an ID
+                         base_title_for_filename = parent_part
+                    else:
+                        base_title_for_filename = name_part # Fallback to the ID-like part
+                else:
+                    base_title_for_filename = name_part
+            elif parsed_url.netloc: # If no path, use domain (sanitized)
+                base_title_for_filename = parsed_url.netloc.replace('www.', '')
+            self.logger.debug(f"Using URL-derived base title: '{base_title_for_filename}'")
+        
+        standardized_title = self._standardize_title_for_obsidian(base_title_for_filename)
+        filename = standardized_title + '.md'
+        self.logger.debug(f"Standardized filename created: {filename}")
+
+        # Prepare note content with standardized H1 title
+        # If H1 was extracted, the obsidian_markdown_content already has it.
+        # If not, we prepend the new standardized_title as H1.
+        final_obsidian_content = obsidian_markdown_content
+        if not h1_title: # Only add H1 if it wasn't already there
+            final_obsidian_content = f"# {standardized_title}\n\n{obsidian_markdown_content}"
+        elif h1_title != standardized_title: # If H1 existed but was different after standardization
+            # Replace original H1 with standardized one
+            lines = obsidian_markdown_content.split('\n', 1)
+            if len(lines) > 1:
+                final_obsidian_content = f"# {standardized_title}\n{lines[1]}"
+            else: # Only H1 line existed
+                final_obsidian_content = f"# {standardized_title}"
+
+
+        content_header = "---\n"
+        content_header += f"url: {url}\n"
+        content_header += f"type: {doc_data.get('type', '')}\n"
+        content_header += "tags:\n"
+        content_header += " - literature-note\n" # Default tag
+        # Add standardized title as a tag/alias for easier linking if needed
+        content_header += f" - {standardized_title.replace(' ', '-')}\n" 
+        for keyword in doc_data.get('keywords', []):
+            # Sanitize keywords for tags (Obsidian tags don't like spaces)
+            tag_keyword = keyword.replace(' ', '-').replace('_', '-')
+            content_header += f" - {tag_keyword}\n"
+        content_header += "---\n\n"
+        
+        final_content_for_file = content_header + final_obsidian_content
+        self.logger.debug(f"Final Obsidian note content prepared.")
+
+        os.makedirs(output_directory, exist_ok=True)
+        self.logger.debug(f"Output directory verified/created: {output_directory}")
+
+        output_path = os.path.join(output_directory, filename)
+        with open(output_path, 'w') as file:
+            file.write(final_content_for_file)
+        self.logger.debug(f"Obsidian note saved: {output_path}")
+
+        self.logger.info(f"Obsidian note created: {output_path} with title '{standardized_title}'")
+        return
+
     def clean_url(self, url: str) -> str:
         if url.startswith('!wget'):
             return url.split(' ', 1)[1].strip()

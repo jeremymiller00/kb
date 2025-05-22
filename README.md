@@ -91,18 +91,29 @@ jina_url = "https://r.jina.ai/<URL>"
 
 ## Installation
 
-1. Create and start virtual environment:
-```sh
-pyenv virtualenv kb-env
-pyenv activate kb-env
-```
+1. **Install Poetry:**
+   If you don't have Poetry installed, follow the instructions on the [official Poetry website](https://python-poetry.org/docs/#installation).
 
-2. Install the required dependencies:
-```sh
-pip install -r requirements.txt
-```
+2. **Clone the repository:**
+   ```sh
+   git clone <repository-url>
+   cd <repository-name>
+   ```
 
-3. Set up your .env file with the following constants:
+3. **Install dependencies:**
+   Poetry will handle the virtual environment creation and dependency installation.
+   ```sh
+   poetry install
+   ```
+   This command will create a virtual environment in the project's root directory (or use an existing one if configured) and install all dependencies specified in `pyproject.toml`.
+
+4. **Activate the virtual environment:**
+   To activate the virtual environment managed by Poetry, run:
+   ```sh
+   poetry shell
+   ```
+
+5. **Set up your .env file with the following constants:**
 ```sh
 touch .env
 OPENAI_API_KEY="<key>"
@@ -110,75 +121,103 @@ DSV_KB_PATH="<path to Data-Science-Vault/Knowledge-base>" # for obsidian integra
 DB_CONN_STRING="<postgres connection string for prod db>"
 TEST_DB_CONN_STRING="<postgres connection string for test db>"
 DATA_DIR="<typically the same as the DSV_KB_PATH>"
-LLM_MODEL_NAME="<default llm>"
+LLM_MODEL_NAME="<default llm>" # Example: "gpt-4o-mini" or other model identifier used by LLMFactory
 
-```
-
-4. Update DSV_KB_PATH in .env with absolute path
-This is to connect to the Obsidian Vault Knowledge Base
-```sh
-echo "DSV_KB_PATH='/Users/jeremy.miller/Desktop/Data-Science-Vault/Knowledge-base'" >> .env
 ```
 
 ## Usage
-### Start venv
-```sh
-pyenv activate kb-env
-```
+
+Once the virtual environment is activated using `poetry shell`, you can run the application and CLI commands.
 
 ## CLI
+All CLI commands should be run using `python src/cli.py ...` from within the Poetry shell.
+
 ### Process URL
 ```sh
-python cli.py process https://example.com
+python src/cli.py process https://example.com
 ```
 
 ### Debug mode: do not save
 ```sh
-python cli.py process -d https://example.com
+python src/cli.py process -d https://example.com
 ```
 
 ### From work laptop
 ```sh
-python cli.py process -w https://example.com
+python src/cli.py process -w https://example.com
 ```
 _Might not work with youtube and github_
 
 
 ### Process batch of URLs
 ```sh
-python cli.py process batch <urls.txt>
+python src/cli.py process batch <urls.txt>
 ```
 
 ### List and browse data files
 ```sh
 # List all data files (default shows 20 most recent)
-python cli.py data list
+python src/cli.py data list
 
 # Filter by file type
-python cli.py data list --type github
+python src/cli.py data list --type github
 
 # Show only files from last 7 days
-python cli.py data list --days 7
+python src/cli.py data list --days 7
 
 # View file details in pretty format
-python cli.py data view /path/to/file.json
+python src/cli.py data view /path/to/file.json
 
 # View raw JSON content
-python cli.py data view /path/to/file.json --format raw
+python src/cli.py data view /path/to/file.json --format raw
 
 # View as markdown
-python cli.py data view /path/to/file.json --format markdown
+python src/cli.py data view /path/to/file.json --format markdown
 
 # Show stats about knowledge base files
-python cli.py data stats
+python src/cli.py data stats
 
 # List all file types
-python cli.py data types
+python src/cli.py data types
 ```
 
 ### Set up database
 ```sh
 python scripts/build_db.py
+```
+
+### Load Processed Data into Database
+To load processed JSON files (e.g., from a directory specified by `DATA_DIR` or a custom path) into the database:
+```sh
+python src/cli.py db load
+```
+**Options:**
+-   `--dir DIRECTORY`: Specify the directory containing JSON files to load. Defaults to the `DATA_DIR` environment variable.
+-   `--debug`: Use the test database connection string (`TEST_DB_CONN_STRING`).
+-   `--skip-duplicates` / `--no-skip-duplicates`: Skip loading if a record with the same URL and timestamp already exists (default is to skip).
+
+Example:
+```sh
+python src/cli.py db load --dir /path/to/my/json_data --debug
+```
+
+### Query Database
+To search for content within the database:
+```sh
+python src/cli.py db query "your search query text" [options]
+```
+**Arguments:**
+-   `query_text`: The text to search for in document content and summaries.
+
+**Options:**
+-   `--keywords TEXT`: Comma-separated keywords to filter by (e.g., "ai,python").
+-   `--type TEXT`: Filter by document type (e.g., "github", "arxiv", "web").
+-   `--limit INTEGER`: Maximum number of results to return (default: 10).
+-   `--debug`: Use the test database connection string.
+
+Example:
+```sh
+python src/cli.py db query "transformer models" --keywords "nlp,deep-learning" --type arxiv --limit 5
 ```
 
 # DANGER ZONE
@@ -194,15 +233,34 @@ dropdb knowledge_base_test # THIS IS PERMANENT
 
 ### Search database
 ```sh
-python cli.py db query "machine learning"
+python src/cli.py db query "machine learning"
 ```
 
 ### Generate visualization
 ```sh
-python cli.py viz graph --output graph.html
+python src/cli.py viz graph --output graph.html
 ```
 
 ### Export content
 ```sh
-python cli.py export --format markdown
+python src/cli.py export --format markdown
 ```
+
+## Running the FastAPI Application
+To run the FastAPI application:
+```sh
+poetry run uvicorn src.app:app --reload
+```
+Or, if you have activated the shell with `poetry shell`:
+```sh
+uvicorn src.app:app --reload
+```
+The application will typically be available at `http://127.0.0.1:8000`.
+
+## Note on Obsidian Note Titles
+Obsidian note titles (filenames) are now standardized:
+-   Titles are derived from the content's H1 heading if available, otherwise from the URL.
+-   Dashes (`-`) and underscores (`_`) in the derived title are replaced with spaces.
+-   Other special characters are removed to create cleaner filenames.
+-   The H1 heading within the note content is also updated to match this standardized title.
+This ensures more readable and consistent note titles in your Obsidian vault.

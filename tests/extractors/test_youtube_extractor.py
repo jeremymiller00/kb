@@ -3,7 +3,7 @@ pytest tests/extractors/test_youtube_extractor.py -v
 """
 
 import pytest
-from src.knowledge_base.extractors.youtube_extractor import YouTubeExtractor
+from knowledge_base.extractors.youtube_extractor import YouTubeExtractor
 
 @pytest.fixture
 def extractor():

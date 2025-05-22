@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from pydantic import ValidationError
-from src.knowledge_base.core.models import (
+from knowledge_base.core.models import (
     ProcessOptions,
     URLRequest,
     ProcessResponse,

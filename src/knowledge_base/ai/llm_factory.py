@@ -2,27 +2,36 @@
 
 # logger = configure_logging()
 
+from knowledge_base.config_manager import get_default_llm_provider
 
 class LLMFactory:
     def __init__(self):
         self.providers = {
             'openai': 'OpenAILLM',
             'anthropic': 'AnthropicLLM'
+            # Add other providers here as they are implemented
         }
         self.modules = {
             'openai': 'openai_llm',
             'anthropic': 'anthropic_llm'
+            # Corresponding module names
         }
 
-    def create_llm(self, provider_name):     
+    def create_llm(self, provider_name: str = None):     
+        if provider_name is None:
+            provider_name = get_default_llm_provider()
+            # Potentially log that we're using the default provider
+            # print(f"LLMFactory: No provider specified, using default: {provider_name}") # For debugging
+
         if provider_name not in self.providers:
-            raise ValueError(f"Provider '{provider_name}' is not supported.")
+            # Consider logging this error before raising
+            raise ValueError(f"Provider '{provider_name}' is not supported. Supported providers are: {list(self.providers.keys())}")
         
         provider_class_name = self.providers[provider_name]
         
         try:
             module = __import__(
-                f"src.knowledge_base.ai.{self.modules[provider_name].lower()}", 
+                f"knowledge_base.ai.{self.modules[provider_name].lower()}", 
                 fromlist=[provider_class_name])
             provider_class = getattr(module, provider_class_name)
             

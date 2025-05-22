@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Query
 
-from src.knowledge_base.utils.data_viewer import DataViewer
-from src.knowledge_base.utils.logger import logger
+from knowledge_base.utils.data_viewer import DataViewer
+from knowledge_base.utils.logger import logger
 
 router = APIRouter(prefix="/data", tags=["Data"])
 

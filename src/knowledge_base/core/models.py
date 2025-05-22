@@ -13,6 +13,7 @@ class ProcessOptions(BaseModel):
     debug: bool = Field(default=False, description="Run in debug mode")
     work: bool = Field(default=False, description="Work mode for special processing")
     jina: bool = Field(default=False, description="Use Jina for processing")
+    db_save: bool = Field(default=True, description="Save processed content to the database")
 
 
 class URLRequest(BaseModel):
@@ -78,3 +79,6 @@ class DocumentCreate(BaseModel):
             }
         }
     )
+
+class ModelConfig(BaseModel):
+    model_name: str

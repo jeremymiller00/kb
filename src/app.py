@@ -11,16 +11,14 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
-from src.knowledge_base.routes import content
-from src.knowledge_base.routes import process
-from src.knowledge_base.routes import data
-from src.knowledge_base.utils.logger import logger
+from knowledge_base.routes import content, process, data, admin # Added admin
+from knowledge_base.utils.logger import logger
 
 # Load environment variables
 load_dotenv()
 
 # Web content directory
-STATIC_DIR = "src/knowledge_base/static"
+STATIC_DIR = "knowledge_base/static"
 
 # # Database connection
 # DB_CONN_STRING = os.getenv("DB_CONN_STRING")
@@ -43,9 +41,10 @@ async def add_request_logging(request: Request, call_next):
 
 
 # Include routers
-# app.include_router(process.router)
+# app.include_router(process.router) # Assuming process.router is deprecated or merged
 app.include_router(content.router)
 app.include_router(data.router)
+app.include_router(admin.router) # Include the new admin router
 
 
 # direct to swagger ui
