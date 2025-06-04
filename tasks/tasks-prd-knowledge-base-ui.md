@@ -18,10 +18,10 @@
 ## Tasks
 
 - [ ] 1.0 Design and Set Up the 80s Retro Terminal UI Framework
-  - [ ] 1.1 Create `retro_terminal.css` for dark background, green/amber text, monospace font, and blinking cursor (see PRD and FastHTML docs for custom styles).
-  - [ ] 1.2 Build FastHTML UI components in `components.py` for containers, buttons, search bar, results list, article view, and navigation controls, using FastHTML primitives (see `llms-ctx.txt` for `Container`, `Button`, `Titled`, etc).
-  - [ ] 1.3 Integrate the CSS and components into a FastHTML layout for the main UI.
-  - [ ] 1.4 Ensure keyboard navigation and sufficient contrast for accessibility.
+  - [x] 1.1 Create `retro_terminal.css` for dark background, green/amber text, monospace font, and blinking cursor (see PRD and FastHTML docs for custom styles).
+  - [x] 1.2 Build FastHTML UI components in `components.py` for containers, buttons, search bar, results list, article view, and navigation controls, using FastHTML primitives (see `llms-ctx.txt` for `Container`, `Button`, `Titled`, etc).
+  - [x] 1.3 Integrate the CSS and components into a FastHTML layout for the main UI.
+  - [x] 1.4 Ensure keyboard navigation and sufficient contrast for accessibility.
   - [ ] 1.5 Write unit tests for UI components.
 
 - [ ] 2.0 Implement Article Search and Filtering Functionality
