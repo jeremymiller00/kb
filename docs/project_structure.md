@@ -47,16 +47,7 @@ knowledge-base-project-root/
 │       │   ├── __init__.py
 │       │   ├── admin.py       # Admin routes for configuration
 │       │   ├── content.py     # Main content processing and CRUD
-│       │   ├── data.py        # Routes for data viewing utilities
 │       │   └── process.py     # (Note: process.py's role might be reduced, with logic in content.py)
-│       │
-│       ├── static/            # Static files for basic web UI (HTML, CSS)
-│       │   ├── data_viewer.html
-│       │   ├── database.html
-│       │   ├── index.html
-│       │   ├── process_url.html
-│       │   └── styles/
-│       │       └── main.css
 │       │
 │       ├── storage/           # Data persistence logic
 │       │   ├── __init__.py
@@ -64,7 +55,6 @@ knowledge-base-project-root/
 │       │
 │       └── utils/             # Shared utilities
 │           ├── __init__.py
-│           ├── data_viewer.py # Utility for browsing data files (used by CLI)
 │           ├── logger.py
 │           └── prompts.py     # LLM prompts
 │
@@ -118,9 +108,9 @@ knowledge-base-project-root/
 -   **`.env.example`**: Template for environment variables.
 
 ### Departures from Older Conceptual Structures:
--   **No Dedicated `ui/` Package**: The project currently focuses on backend and CLI functionalities. Basic HTML templates for interaction are in `src/knowledge_base/static/`.
+-   **FastHTML UI**: The project uses FastHTML for UI rather than JavaScript. The UI is built with FastHTML components in the ui/ directory.
 -   **No Dedicated `processors/` Package**: Content processing logic is generally integrated within `ContentManager`, AI modules, or extractors as needed.
--   **No Dedicated `visualization/` Package**: Advanced visualization components are not currently part of the core structure. `utils/data_viewer.py` and static HTML files provide basic data display.
+-   **No JavaScript UI**: The project does not use static HTML/JavaScript files for UI. All UI is built with FastHTML in Python.
 -   **Data Storage Paths**: The actual storage locations for user-generated data (JSON files, Obsidian notes, etc.) are defined by environment variables (`DSV_KB_PATH`, `DATA_DIR`) and are not part of the tracked repository structure.
 
 This structure promotes modularity and clear separation of concerns, facilitating development and maintenance.
