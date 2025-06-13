@@ -1,119 +1,24 @@
 # Knowledge Base
 
-This is the Swagger / FASTAPI version of the Knowledge Base App
-This is what I am currently working on
-The GUI version is knowledge-base-loader
-If any visualizations are needed, use Jupyter
-
-The CLI is useful for when the database is not present
-As of 2025-01-03, workflow is to add articles via cli, worry about database later
-Building the DB is easy and fast
-
-# NOTE set DB_CONN_STRING in .env to use test or prod db
-## Features to Build
-* Chatbot Eval Creator
- * Upload PRD, DB schema
- * Produce sample Q and As
- * Rate them and re-run
-* Data Viewer
- * Hamel [Blog](https://hamel.dev/blog/posts/field-guide/#the-most-important-ai-investment-a-simple-data-viewer)
- * Here’s what makes a good data annotation tool:
- * Show all context in one place. Don’t make users hunt through different systems to understand what happened.
- * Make feedback trivial to capture. One-click correct/incorrect buttons beat lengthy forms.
- * Capture open-ended feedback. This lets you capture nuanced issues that don’t fit into a pre-defined taxonomy.
- * Enable quick filtering and sorting. Teams need to easily dive into specific error types. In the example above, NurtureBoss can quickly filter by the channel (voice, text, chat) or the specific property they want to look at quickly.
- * Have hotkeys that allow users to navigate between data examples and annotate without clicking.
-
-
-## To Do
-* Basic Unit Tests
- * Content Manager - done
- * Storage
- * Models
- * Routes
- * Utils
- * AI stuff
-* Discovery module
- * Find related content based on some input
-  * topic, title, keyword, relationship
- * recommend content
-* be able to add items from work laptop, even though DB lives on personal laptop - how important is this really?
- * Try catch DB insert
- * Somehow mark that it wasn't inserted
- * At each new insert, check for uninserted
- * Manually trigger check for uninserted
-* put constants in a database table, like default llm, dsv_kb_path, etc
- * Like Academic AI Platform
- * Use configs to update software and launch
- * Data driven build and update
- * Configs live in a database
- * API to interact with the database
-* Fix obsidian note titles, not dashes or underscore
-* Add safety feature for deletes - must enter a code as a url parameter
-* Content Manager functions
- * clean
- * dedupe
- * delete
- * update
- * Method for deduping the db
- * Way to complete missing data, such as ai summary or embeddings
-* specify llm from API
-* get default embedding model from API
-* set default embedding model from API
-* specify embedding model from API
-* get default embedding model from API
-* set default embedding model from API
-* Deal with files that are too long to fit in context window
-* Fallback for LLM failures where I still want the item in my database
- * Semi-manual mode?
-* Claude integration
-* Local embedding model option
-* Local summarization model option
-* UI
- * View article content
- * basic db stats
- * clusters of articles, top, recent
- * search, semantic
- * article type distribution
- * article relationship network
- * how can I discover new ideas and help make connections, possibly to my writing topics
- * keyword counts, similarity
- * export data
-
-
-## Jina online html to markdown
-jina_url = "https://r.jina.ai/<URL>"
-
 ## Features
-
 - Supports summarization of web content from URLs, ArXiv papers, and GitHub repositories
 - Uses OpenAI GPT model for generating high-quality summaries
 
 ## Installation
-
-1. **Install Poetry:**
-   If you don't have Poetry installed, follow the instructions on the [official Poetry website](https://python-poetry.org/docs/#installation).
-
-2. **Clone the repository:**
+1. **Clone the repository:**
    ```sh
    git clone <repository-url>
    cd <repository-name>
    ```
 
-3. **Install dependencies:**
-   Poetry will handle the virtual environment creation and dependency installation.
+2. **Install dependencies:**
    ```sh
-   poetry install
-   ```
-   This command will create a virtual environment in the project's root directory (or use an existing one if configured) and install all dependencies specified in `pyproject.toml`.
-
-4. **Activate the virtual environment:**
-   To activate the virtual environment managed by Poetry, run:
-   ```sh
-   poetry shell
+   pyenv virtualenv kb-env
+   pyenv activate kb-env
+   pip install -r requirements.txt
    ```
 
-5. **Set up your .env file with the following constants:**
+3. **Set up your .env file with the following constants:**
 ```sh
 touch .env
 OPENAI_API_KEY="<key>"
@@ -126,7 +31,6 @@ LLM_MODEL_NAME="<default llm>" # Example: "gpt-4o-mini" or other model identifie
 ```
 
 ## Usage
-
 Once the virtual environment is activated using `poetry shell`, you can run the application and CLI commands.
 
 ## CLI
@@ -142,19 +46,12 @@ python src/cli.py process https://example.com
 python src/cli.py process -d https://example.com
 ```
 
-### From work laptop
-```sh
-python src/cli.py process -w https://example.com
-```
-_Might not work with youtube and github_
-
-
 ### Process batch of URLs
 ```sh
 python src/cli.py process batch <urls.txt>
 ```
 
-### List and browse data files
+### List and browse data files - TO BE BUILT
 ```sh
 # List all data files (default shows 20 most recent)
 python src/cli.py data list
@@ -201,7 +98,7 @@ Example:
 python src/cli.py db load --dir /path/to/my/json_data --debug
 ```
 
-### Query Database
+### Query Database - BROKEN
 To search for content within the database:
 ```sh
 python src/cli.py db query "your search query text" [options]
@@ -231,31 +128,17 @@ dropdb knowledge_base # THIS IS PERMANENT
 dropdb knowledge_base_test # THIS IS PERMANENT
 ```
 
-### Search database
-```sh
-python src/cli.py db query "machine learning"
-```
-
-### Generate visualization
-```sh
-python src/cli.py viz graph --output graph.html
-```
-
-### Export content
-```sh
-python src/cli.py export --format markdown
-```
 
 ## Running the FastAPI Application
 To run the FastAPI application:
 ```sh
-poetry run uvicorn src.app:app --reload
+python src/app.py
 ```
-Or, if you have activated the shell with `poetry shell`:
-```sh
-uvicorn src.app:app --reload
-```
+
 The application will typically be available at `http://127.0.0.1:8000`.
+
+## Jina online html to markdown
+jina_url = "https://r.jina.ai/<URL>"
 
 ## Note on Obsidian Note Titles
 Obsidian note titles (filenames) are now standardized:
@@ -264,3 +147,65 @@ Obsidian note titles (filenames) are now standardized:
 -   Other special characters are removed to create cleaner filenames.
 -   The H1 heading within the note content is also updated to match this standardized title.
 This ensures more readable and consistent note titles in your Obsidian vault.
+
+# NOTE set DB_CONN_STRING in .env to use test or prod db
+## Features to Build
+* Data Viewer
+ * Hamel [Blog](https://hamel.dev/blog/posts/field-guide/#the-most-important-ai-investment-a-simple-data-viewer)
+ * Here’s what makes a good data annotation tool:
+ * Show all context in one place. Don’t make users hunt through different systems to understand what happened.
+ * Make feedback trivial to capture. One-click correct/incorrect buttons beat lengthy forms.
+ * Capture open-ended feedback. This lets you capture nuanced issues that don’t fit into a pre-defined taxonomy.
+ * Enable quick filtering and sorting. Teams need to easily dive into specific error types. In the example above, NurtureBoss can quickly filter by the channel (voice, text, chat) or the specific property they want to look at quickly.
+ * Have hotkeys that allow users to navigate between data examples and annotate without clicking.
+
+
+## To Do
+* UI
+   * View article content
+   * basic db stats
+   * clusters of articles, top, recent
+   * search, semantic
+   * article type distribution
+   * article relationship network
+   * how can I discover new ideas and help make connections, possibly to my writing topics
+   * keyword counts, similarity
+   * export data
+* Discovery module
+   * Find related content based on some input
+   * topic, title, keyword, relationship
+   * recommend content
+* Basic Unit Tests
+   * Content Manager - done
+   * Storage
+   * Models
+   * Routes
+   * Utils
+   * AI stuff
+* put constants in a database table, like default llm, dsv_kb_path, etc
+   * Like Academic AI Platform
+   * Use configs to update software and launch
+   * Data driven build and update
+   * Configs live in a database
+   * API to interact with the database
+* Fix obsidian note titles, not dashes or underscore
+* Add safety feature for deletes - must enter a code as a url parameter
+* Content Manager functions
+   * clean
+   * dedupe
+   * delete
+   * update
+   * Method for deduping the db
+   * Way to complete missing data, such as ai summary or embeddings
+* specify llm from API
+* get default embedding model from API
+* set default embedding model from API
+* specify embedding model from API
+* get default embedding model from API
+* set default embedding model from API
+* Deal with files that are too long to fit in context window
+* Fallback for LLM failures where I still want the item in my database
+   * Semi-manual mode?
+* Claude integration
+* Local embedding model option
+* Local summarization model option
