@@ -29,12 +29,14 @@ def TerminalSearchBar(placeholder='Search articles...', **kwargs):
     return Form(
         Input(
             type='text',
-            name='q',
+            name='query',
             placeholder=placeholder,
             autofocus=True,
             **kwargs
         ),
         TerminalButton('Search', primary=True, type='submit'),
+        action='/search',
+        method='get',
         role='search',
         style='display:flex;gap:1em;align-items:center;'
     )

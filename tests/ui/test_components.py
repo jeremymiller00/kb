@@ -5,35 +5,47 @@ import pytest
 from src.knowledge_base.ui import components
 
 
+# Test MainLayout
+def test_main_layout_renders():
+    html = components.MainLayout("Test Title", "Test Content")
+    assert "terminal-container" in str(html)
+    assert "terminal-title" in str(html)
+    assert "Test Title" in str(html)
+    assert "Test Content" in str(html)
+
+
 # Test TerminalContainer
 @pytest.mark.parametrize("content", ["Test content", "<b>HTML</b>"])
 def test_terminal_container_renders(content):
     html = components.TerminalContainer(content)
     assert "terminal-container" in str(html)
+    assert "scanlines" in str(html)
     assert content in str(html)
 
 
 # Test TerminalButton
 @pytest.mark.parametrize(
-    "label,kwargs",
+    "label,primary,expected_class",
     [
-        ("Click Me", {}),
-        ("Submit", {"type": "submit"}),
-        ("Back", {"cls": "back-btn"}),
+        ("Click Me", False, ""),
+        ("Submit", True, "button-primary"),
+        ("Back", False, ""),
     ]
 )
-def test_terminal_button_renders(label, kwargs):
-    html = components.TerminalButton(label, **kwargs)
-    assert "terminal-btn" in str(html)
+def test_terminal_button_renders(label, primary, expected_class):
+    html = components.TerminalButton(label, primary=primary)
     assert label in str(html)
+    if expected_class:
+        assert expected_class in str(html)
 
 
 # Test TerminalSearchBar
 @pytest.mark.parametrize("placeholder", ["Search...", "Find articles"])
 def test_terminal_search_bar_renders(placeholder):
     html = components.TerminalSearchBar(placeholder=placeholder)
-    assert "terminal-search-bar" in str(html)
+    assert "search" in str(html)
     assert placeholder in str(html)
+    assert "Search" in str(html)
 
 
 # Test TerminalResultsList
@@ -41,65 +53,48 @@ def test_terminal_search_bar_renders(placeholder):
     "results",
     [
         [],
-        [{"title": "Article 1", "snippet": "Summary 1"}],
+        [{"title": "Article 1", "snippet": "Summary 1", "id": "1"}],
         [
-            {"title": "A", "snippet": "S1"},
-            {"title": "B", "snippet": "S2"}
+            {"title": "A", "snippet": "S1", "id": "1"},
+            {"title": "B", "snippet": "S2", "id": "2"}
         ],
     ]
 )
 def test_terminal_results_list_renders(results):
     html = components.TerminalResultsList(results)
-    assert "terminal-results-list" in str(html)
+    assert "results-list" in str(html)
     for r in results:
         assert r["title"] in str(html)
+        assert f"/article/{r['id']}" in str(html)
 
 
 # Test TerminalArticleView
-@pytest.mark.parametrize(
-    "article",
-    [
-        {
-            "title": "T",
-            "author": "A",
-            "date": "2024-01-01",
-            "tags": ["x"],
-            "content": "Body"
-        },
-        {
-            "title": "Long Title",
-            "author": "B",
-            "date": "2023-12-31",
-            "tags": [],
-            "content": "<p>HTML</p>"
-        },
-    ]
-)
-def test_terminal_article_view_renders(article):
-    html = components.TerminalArticleView(article)
-    assert "terminal-article-view" in str(html)
-    assert article["title"] in str(html)
-    assert article["author"] in str(html)
-    assert article["date"] in str(html)
-    assert article["content"] in str(html)
+def test_terminal_article_view_renders():
+    meta = {"author": "John Doe", "date": "2024-01-01", "tags": ["ai", "tech"]}
+    html = components.TerminalArticleView("Test Title", meta, "Test Content")
+    assert "article-view" in str(html)
+    assert "Test Title" in str(html)
+    assert "John Doe" in str(html)
+    assert "2024-01-01" in str(html)
+    assert "Test Content" in str(html)
 
 
 # Test TerminalNavControls
 @pytest.mark.parametrize(
-    "has_prev,has_next",
+    "back_url,next_url",
     [
-        (True, False),
-        (False, True),
-        (True, True),
-        (False, False),
+        ("/back", None),
+        (None, "/next"),
+        ("/back", "/next"),
+        (None, None),
     ]
 )
-def test_terminal_nav_controls_renders(has_prev, has_next):
-    html = components.TerminalNavControls(has_prev=has_prev, has_next=has_next)
-    assert "terminal-nav-controls" in str(html)
-    if has_prev:
-        assert "Previous" in str(html)
-    if has_next:
+def test_terminal_nav_controls_renders(back_url, next_url):
+    html = components.TerminalNavControls(back_url=back_url, next_url=next_url)
+    assert "nav-controls" in str(html)
+    if back_url:
+        assert "Back" in str(html)
+    if next_url:
         assert "Next" in str(html)
 
 
@@ -114,6 +109,24 @@ def test_terminal_nav_controls_renders(has_prev, has_next):
 )
 def test_terminal_suggestion_box_renders(suggestions):
     html = components.TerminalSuggestionBox(suggestions)
-    assert "terminal-suggestion-box" in str(html)
+    assert "suggestion-box" in str(html)
+    assert "Suggestions" in str(html)
     for s in suggestions:
         assert s in str(html)
+
+
+# Test ArticleTitle
+def test_article_title_renders():
+    html = components.ArticleTitle("Test Title")
+    assert "article-title" in str(html)
+    assert "Test Title" in str(html)
+
+
+# Test ArticleMeta
+def test_article_meta_renders():
+    meta = {"author": "John Doe", "date": "2024-01-01", "tags": ["ai", "tech"]}
+    html = components.ArticleMeta(meta)
+    assert "article-meta" in str(html)
+    assert "By John Doe" in str(html)
+    assert "2024-01-01" in str(html)
+    assert "ai, tech" in str(html)

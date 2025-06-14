@@ -271,7 +271,12 @@ def search_content(
     if debug:
         db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
     try:
-        results = db.search_content(query, limit=limit)
+        # Convert string query to dictionary format expected by db.search_content
+        search_params = {}
+        if query.strip():  # Only add text_search if query is not empty
+            search_params['text_search'] = query
+        
+        results = db.search_content(search_params, limit=limit)
         return [DocumentResponse(**doc) for doc in results]
     except Exception as e:
         logger.error(f"Error searching documents: {e}")
