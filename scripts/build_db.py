@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
-from knowledge_base.storage.database import Database
-from knowledge_base.utils.config import configure_logging
+from src.knowledge_base.storage.database import Database
+from src.knowledge_base.utils.logger import configure_logging
 
 
 load_dotenv()
@@ -27,7 +27,8 @@ async def main(data_dir: str):
     with console.status("[bold green]Building DB..."):
         # Initialize database
         db = Database(
-            connection_string=os.getenv("DB_CONN_STRING")
+            connection_string=os.getenv("DB_CONN_STRING"),
+            logger=logger
         )
         logger.info("Database initialized")
 
@@ -39,7 +40,18 @@ async def main(data_dir: str):
                     logger.info(f"Accessed {file_path}")
                     with open(file_path) as file:
                         data = json.load(file)
-                    content_id = await db.store_content(data)
+                    # Remove null bytes from string values
+                    def clean_null_bytes(obj):
+                        if isinstance(obj, str):
+                            return obj.replace('\x00', '')
+                        elif isinstance(obj, dict):
+                            return {k: clean_null_bytes(v) for k, v in obj.items()}
+                        elif isinstance(obj, list):
+                            return [clean_null_bytes(item) for item in obj]
+                        return obj
+                    
+                    data = clean_null_bytes(data)
+                    content_id = db.store_content(data)
                     logger.info(f"Populated database with record {content_id}")
     
     logger.info("Database build complete")
@@ -47,5 +59,4 @@ async def main(data_dir: str):
 
 
 if __name__ == '__main__':
-    # print("you are here")
     asyncio.run(main(data_dir=os.getenv("DATA_DIR")))
