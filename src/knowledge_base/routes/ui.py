@@ -4,6 +4,7 @@
 from fasthtml.common import fast_app, serve, Style, Div, Html, Head, Title, Link, Body
 import requests
 import os
+from datetime import datetime
 from src.knowledge_base.ui.components import (
     MainLayout,
     TerminalContainer,
@@ -118,7 +119,29 @@ def index():
 
 @rt('/article/{article_id:int}')
 def article_view(article_id: int):
-    article = next((a for a in ARTICLES if a["id"] == article_id), None)
+    # Fetch article from database via API
+    try:
+        api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+        article_url = f"{api_base_url}/content/{article_id}"
+        
+        response = requests.get(article_url)
+        
+        if response.status_code == 200:
+            article_data = response.json()
+            # Convert database article to display format
+            article = {
+                "id": article_data["id"],
+                "title": article_data.get("url", "Untitled"),
+                "author": "System",  
+                "date": datetime.fromtimestamp(article_data.get("timestamp", 0)).strftime('%Y-%m-%d') if article_data.get("timestamp") else "Unknown",
+                "tags": article_data.get("keywords", []),
+                "content": article_data.get("summary", article_data.get("content", ""))
+            }
+        else:
+            article = None
+    except Exception as e:
+        article = None
+    
     if not article:
         return Html(
             Head(Title("Not found")),
