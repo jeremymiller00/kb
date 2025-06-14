@@ -1,11 +1,19 @@
 # FastHTML UI components for 80s retro terminal look
 # src/knowledge_base/ui/components.py
 
-from fasthtml.common import Div, Button, Form, Input, A, Article, H3
+from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span
+
+# Main layout wrapper
+def MainLayout(title, *content, **kwargs):
+    """Main layout wrapper that includes terminal styling and accessibility"""
+    return Div(
+        H1(title + " ", Span("_", cls="blink"), cls="terminal-title"),
+        Div(*content, cls="terminal-content"),
+        cls='terminal-container scanlines',
+        **kwargs
+    )
 
 # Container for the main terminal UI
-
-
 def TerminalContainer(*c, **kwargs):
     return Div(*c, cls='terminal-container scanlines', **kwargs)
 

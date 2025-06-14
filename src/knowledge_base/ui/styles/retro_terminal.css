@@ -111,6 +111,39 @@ input:focus, select:focus, textarea:focus, button:focus {
   outline-offset: 2px;
 }
 
+/* Layout enhancements */
+.terminal-title {
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  border-bottom: 2px solid #39ff14;
+  padding-bottom: 0.5rem;
+}
+
+.terminal-content {
+  margin-top: 1rem;
+}
+
+.main-ui-inner, .article-ui-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.result-item {
+  border-left: 3px solid #39ff1444;
+  padding-left: 1rem;
+  margin-bottom: 1.5rem;
+}
+.result-item:hover {
+  border-left-color: #ffe066;
+  background: #181c18;
+  padding: 0.5rem 0 0.5rem 1rem;
+  border-radius: 4px;
+}
+
 /* Optional: retro scanlines effect */
 .scanlines {
   position: relative;
