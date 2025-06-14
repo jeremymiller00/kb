@@ -26,8 +26,8 @@
 
 - [ ] 2.0 Implement Article Search and Filtering Functionality
   - [x] 2.1 Add a FastHTML route and handler for the search page in `ui.py`.
-  - [ ] 2.2 Implement a search form using FastHTML's `Form`, `Input`, and `Button` components.
-  - [ ] 2.3 Connect the search form to backend logic in `content_manager.py` for full-text and keyword search.
+  - [x] 2.2 Implement a search form using FastHTML's `Form`, `Input`, and `Button` components.
+  - [x] 2.3 Connect the search form to backend logic in `content_manager.py` for full-text and keyword search.
   - [ ] 2.4 Add filtering controls for tags, date, and author using FastHTML form elements.
   - [ ] 2.5 Display search results using a styled results list component.
   - [ ] 2.6 Paginate or lazy-load results for large result sets.

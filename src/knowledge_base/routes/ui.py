@@ -4,6 +4,7 @@
 from fasthtml.common import fast_app, serve, Style, Div, Html, Head, Title, Link, Body
 import requests
 import os
+import logging
 from datetime import datetime
 from src.knowledge_base.ui.components import (
     MainLayout,
@@ -14,10 +15,24 @@ from src.knowledge_base.ui.components import (
     TerminalNavControls,
     TerminalSuggestionBox,
 )
+from src.knowledge_base.core.content_manager import ContentManager
 
 app, rt = fast_app()
 
-# Demo data for articles
+# Initialize logger and ContentManager
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+# Initialize ContentManager with database connection
+db_connection_string = os.getenv('DB_CONN_STRING')
+content_manager = ContentManager(logger, db_connection_string) if db_connection_string else None
+
+# Demo data for articles (fallback)
 ARTICLES = [
     {
         "id": 1,
@@ -48,25 +63,83 @@ ARTICLES = [
 def index():
     search_bar = TerminalSearchBar(placeholder="Search articles...")
     
-    # Try to get recent articles from FastAPI endpoint
-    try:
-        api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
-        search_url = f"{api_base_url}/content/search/"
-        
-        # Get recent articles (empty query returns all with limit)
-        response = requests.get(search_url, params={"query": "", "limit": 5})
-        
-        if response.status_code == 200:
-            search_results = response.json()
+    # Try to get recent articles using ContentManager
+    if content_manager:
+        try:
+            recent_results = content_manager.get_recent_content(limit=5)
             articles_data = [
                 {
                     "id": result["id"],
                     "title": result.get("url", "Untitled"),
                     "snippet": result.get("summary", result.get("content", ""))[:60]
                 }
-                for result in search_results
+                for result in recent_results
             ]
-        else:
+        except Exception as e:
+            logger.error(f"Error getting recent content with ContentManager: {e}")
+            # Fallback to API
+            try:
+                api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+                search_url = f"{api_base_url}/content/search/"
+                response = requests.get(search_url, params={"query": "", "limit": 5})
+                
+                if response.status_code == 200:
+                    search_results = response.json()
+                    articles_data = [
+                        {
+                            "id": result["id"],
+                            "title": result.get("url", "Untitled"),
+                            "snippet": result.get("summary", result.get("content", ""))[:60]
+                        }
+                        for result in search_results
+                    ]
+                else:
+                    articles_data = [
+                        {
+                            "id": a["id"],
+                            "title": a["title"],
+                            "snippet": a["content"][:60]
+                        }
+                        for a in ARTICLES
+                    ]
+            except Exception:
+                # Final fallback to demo data
+                articles_data = [
+                    {
+                        "id": a["id"],
+                        "title": a["title"],
+                        "snippet": a["content"][:60]
+                    }
+                    for a in ARTICLES
+                ]
+    else:
+        # No ContentManager, try API directly
+        try:
+            api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+            search_url = f"{api_base_url}/content/search/"
+            response = requests.get(search_url, params={"query": "", "limit": 5})
+            
+            if response.status_code == 200:
+                search_results = response.json()
+                articles_data = [
+                    {
+                        "id": result["id"],
+                        "title": result.get("url", "Untitled"),
+                        "snippet": result.get("summary", result.get("content", ""))[:60]
+                    }
+                    for result in search_results
+                ]
+            else:
+                articles_data = [
+                    {
+                        "id": a["id"],
+                        "title": a["title"],
+                        "snippet": a["content"][:60]
+                    }
+                    for a in ARTICLES
+                ]
+        except Exception:
+            # Fallback to demo data
             articles_data = [
                 {
                     "id": a["id"],
@@ -75,16 +148,6 @@ def index():
                 }
                 for a in ARTICLES
             ]
-    except Exception:
-        # Fallback to demo data
-        articles_data = [
-            {
-                "id": a["id"],
-                "title": a["title"],
-                "snippet": a["content"][:60]
-            }
-            for a in ARTICLES
-        ]
     
     results = TerminalResultsList(articles_data)
     layout = MainLayout(
@@ -119,28 +182,51 @@ def index():
 
 @rt('/article/{article_id:int}')
 def article_view(article_id: int):
-    # Fetch article from database via API
-    try:
-        api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
-        article_url = f"{api_base_url}/content/{article_id}"
-        
-        response = requests.get(article_url)
-        
-        if response.status_code == 200:
-            article_data = response.json()
-            # Convert database article to display format
-            article = {
-                "id": article_data["id"],
-                "title": article_data.get("url", "Untitled"),
-                "author": "System",  
-                "date": datetime.fromtimestamp(article_data.get("timestamp", 0)).strftime('%Y-%m-%d') if article_data.get("timestamp") else "Unknown",
-                "tags": article_data.get("keywords", []),
-                "content": article_data.get("summary", article_data.get("content", ""))
-            }
-        else:
+    # Try to fetch article using ContentManager first
+    article = None
+    if content_manager:
+        try:
+            # Search for the specific article by ID
+            # Since we don't have a direct get_by_id method, we can search and filter
+            all_results = content_manager.db.search_content({}, limit=1000)  # Get all to find by ID
+            article_data = next((result for result in all_results if result["id"] == article_id), None)
+            
+            if article_data:
+                article = {
+                    "id": article_data["id"],
+                    "title": article_data.get("url", "Untitled"),
+                    "author": "System",  
+                    "date": datetime.fromtimestamp(article_data.get("timestamp", 0)).strftime('%Y-%m-%d') if article_data.get("timestamp") else "Unknown",
+                    "tags": article_data.get("keywords", []),
+                    "content": article_data.get("summary", article_data.get("content", ""))
+                }
+        except Exception as e:
+            logger.error(f"Error getting article with ContentManager: {e}")
+    
+    # Fallback to API if ContentManager failed or not available
+    if not article:
+        try:
+            api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+            article_url = f"{api_base_url}/content/{article_id}"
+            
+            response = requests.get(article_url)
+            
+            if response.status_code == 200:
+                article_data = response.json()
+                # Convert database article to display format
+                article = {
+                    "id": article_data["id"],
+                    "title": article_data.get("url", "Untitled"),
+                    "author": "System",  
+                    "date": datetime.fromtimestamp(article_data.get("timestamp", 0)).strftime('%Y-%m-%d') if article_data.get("timestamp") else "Unknown",
+                    "tags": article_data.get("keywords", []),
+                    "content": article_data.get("summary", article_data.get("content", ""))
+                }
+            else:
+                article = None
+        except Exception as e:
+            logger.error(f"Error getting article via API: {e}")
             article = None
-    except Exception as e:
-        article = None
     
     if not article:
         return Html(
@@ -190,14 +276,53 @@ def article_view(article_id: int):
 def search_page(query: str = ""):
     search_bar = TerminalSearchBar(placeholder="Search articles...", value=query)
     
-    # Use FastAPI search endpoint instead of demo data
-    if query:
+    # Use ContentManager for search if available
+    if query and content_manager:
         try:
-            # Get the FastAPI base URL from environment or default to localhost
+            # Use ContentManager to search content
+            search_results = content_manager.search_content(text_query=query, limit=20)
+            filtered_articles = [
+                {
+                    "id": result["id"],
+                    "title": result.get("url", "Untitled"),  # Use URL as title if no title field
+                    "content": result.get("summary", result.get("content", ""))[:200]
+                }
+                for result in search_results
+            ]
+        except Exception as e:
+            logger.error(f"Error using ContentManager for search: {e}")
+            # Fallback to API call
+            try:
+                api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+                search_url = f"{api_base_url}/content/search/"
+                response = requests.get(search_url, params={"query": query, "limit": 20})
+                
+                if response.status_code == 200:
+                    search_results = response.json()
+                    filtered_articles = [
+                        {
+                            "id": result["id"],
+                            "title": result.get("url", "Untitled"),
+                            "content": result.get("summary", result.get("content", ""))[:200]
+                        }
+                        for result in search_results
+                    ]
+                else:
+                    filtered_articles = []
+            except Exception as api_e:
+                logger.error(f"API fallback also failed: {api_e}")
+                # Final fallback to demo data
+                filtered_articles = [
+                    a for a in ARTICLES 
+                    if query.lower() in a["title"].lower() 
+                    or query.lower() in a["content"].lower()
+                    or any(query.lower() in tag.lower() for tag in a["tags"])
+                ]
+    elif query:
+        # No ContentManager available, try API directly
+        try:
             api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
             search_url = f"{api_base_url}/content/search/"
-            
-            # Make request to FastAPI search endpoint
             response = requests.get(search_url, params={"query": query, "limit": 20})
             
             if response.status_code == 200:
@@ -205,7 +330,7 @@ def search_page(query: str = ""):
                 filtered_articles = [
                     {
                         "id": result["id"],
-                        "title": result.get("url", "Untitled"),  # Use URL as title if no title field
+                        "title": result.get("url", "Untitled"),
                         "content": result.get("summary", result.get("content", ""))[:200]
                     }
                     for result in search_results
@@ -213,7 +338,8 @@ def search_page(query: str = ""):
             else:
                 filtered_articles = []
         except Exception as e:
-            # Fallback to demo data if API call fails
+            logger.error(f"API search failed: {e}")
+            # Fallback to demo data
             filtered_articles = [
                 a for a in ARTICLES 
                 if query.lower() in a["title"].lower() 
@@ -221,8 +347,24 @@ def search_page(query: str = ""):
                 or any(query.lower() in tag.lower() for tag in a["tags"])
             ]
     else:
-        # Show demo data when no query
-        filtered_articles = ARTICLES
+        # No query - show recent content if ContentManager available
+        if content_manager:
+            try:
+                recent_results = content_manager.get_recent_content(limit=10)
+                filtered_articles = [
+                    {
+                        "id": result["id"],
+                        "title": result.get("url", "Untitled"),
+                        "content": result.get("summary", result.get("content", ""))[:200]
+                    }
+                    for result in recent_results
+                ]
+            except Exception as e:
+                logger.error(f"Error getting recent content: {e}")
+                filtered_articles = ARTICLES
+        else:
+            # Show demo data when no query and no ContentManager
+            filtered_articles = ARTICLES
     
     results = TerminalResultsList([
         {

@@ -29,11 +29,14 @@ import time
 import json
 import re
 from urllib.parse import urlparse
+from typing import Dict, List, Any, Optional
+from ..storage.database import Database
 
 
 class ContentManager():
-    def __init__(self, logger):
+    def __init__(self, logger, db_connection_string=None):
         self.logger = logger
+        self.db = Database(connection_string=db_connection_string, logger=logger) if db_connection_string else None
 
     def get_file_path(self, url, force_general=False):
         self.logger.debug(f"Creating file path for URL: {url}")
@@ -318,3 +321,107 @@ class ContentManager():
     def jinafy_url(self, url: str) -> str:
         """Use Jina to process URL if cannot process; useful for pdfs"""
         return f"https://r.jina.ai/{url}"
+
+    def search_content(
+        self, 
+        text_query: str = "",
+        keywords: List[str] = None,
+        content_type: str = None,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for content using full-text search and keyword matching.
+        
+        Args:
+            text_query: Text to search for in content and summaries
+            keywords: List of keywords to match
+            content_type: Filter by content type (github, arxiv, etc.)
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of matching documents
+        """
+        if not self.db:
+            self.logger.error("Database not initialized. Cannot perform search.")
+            return []
+        
+        try:
+            # Build search query parameters
+            query_params = {}
+            
+            # Add full-text search if query provided
+            if text_query and text_query.strip():
+                # Convert text query to PostgreSQL tsquery format
+                # Remove special characters and join with &
+                clean_query = re.sub(r'[^\w\s]', ' ', text_query.strip())
+                query_terms = [term for term in clean_query.split() if term]
+                if query_terms:
+                    query_params['text_search'] = ' & '.join(query_terms)
+            
+            # Add keyword search if keywords provided
+            if keywords:
+                query_params['keywords'] = keywords
+            
+            # Add content type filter
+            if content_type:
+                query_params['type'] = content_type
+            
+            self.logger.debug(f"Searching with parameters: {query_params}")
+            results = self.db.search_content(query_params, limit=limit)
+            
+            self.logger.info(f"Found {len(results)} results for search")
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Error during content search: {e}")
+            return []
+
+    def search_by_keywords(self, keywords: List[str], limit: int = 20) -> List[Dict[str, Any]]:
+        """
+        Search for content by keywords only.
+        
+        Args:
+            keywords: List of keywords to search for
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of matching documents
+        """
+        return self.search_content(keywords=keywords, limit=limit)
+
+    def search_by_text(self, text_query: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """
+        Search for content by full-text search only.
+        
+        Args:
+            text_query: Text to search for
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of matching documents
+        """
+        return self.search_content(text_query=text_query, limit=limit)
+
+    def get_recent_content(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get recently added content.
+        
+        Args:
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of recent documents
+        """
+        if not self.db:
+            self.logger.error("Database not initialized. Cannot get recent content.")
+            return []
+        
+        try:
+            # Search with empty criteria to get all content, ordered by timestamp
+            results = self.db.search_content({}, limit=limit)
+            # Sort by timestamp descending to get most recent first
+            results.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+            return results
+        except Exception as e:
+            self.logger.error(f"Error getting recent content: {e}")
+            return []

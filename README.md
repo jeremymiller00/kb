@@ -32,12 +32,15 @@ LLM_MODEL_NAME="<default llm>" # Example: "gpt-4o-mini" or other model identifie
 
 ## Usage
 Once the virtual environment is activated, you can run the application and CLI commands.
-
-## UI
-To run the FastHTML UI:
-1. Using the direct route module:
+* Start postgres
+* Start the fastapi backend in a separate terminal window
+```sh
+python scr/app.py
+```
+* Start the UI in a separate terminal window
+```sh
 uvicorn ui:app --reload --host 0.0.0.0 --port 5001
-
+```
 
 ## CLI
 All CLI commands should be run using `python src/cli.py ...`.

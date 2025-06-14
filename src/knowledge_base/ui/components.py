@@ -24,21 +24,29 @@ def TerminalButton(label, primary=False, **kwargs):
     return Button(label, cls=btn_cls, **kwargs)
 
 
-# Search bar (input + button)
-def TerminalSearchBar(placeholder='Search articles...', **kwargs):
+# Search bar (input + button) using FastHTML Form, Input, and Button components
+def TerminalSearchBar(placeholder='Search articles...', value='', **kwargs):
+    """Search form using FastHTML's Form, Input, and Button components"""
     return Form(
         Input(
             type='text',
             name='query',
             placeholder=placeholder,
+            value=value,
             autofocus=True,
+            style='flex:1;',
             **kwargs
         ),
-        TerminalButton('Search', primary=True, type='submit'),
+        Button(
+            'Search',
+            type='submit',
+            cls='button-primary',
+            style='margin-left:1em;'
+        ),
         action='/search',
         method='get',
         role='search',
-        style='display:flex;gap:1em;align-items:center;'
+        style='display:flex;gap:1em;align-items:center;margin-bottom:2em;'
     )
 
 
