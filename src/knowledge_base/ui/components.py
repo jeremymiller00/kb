@@ -1,7 +1,7 @@
 # FastHTML UI components for 80s retro terminal look
 # src/knowledge_base/ui/components.py
 
-from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span
+from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span, Select, Option, Label
 
 # Main layout wrapper
 def MainLayout(title, *content, **kwargs):
@@ -47,6 +47,106 @@ def TerminalSearchBar(placeholder='Search articles...', value='', **kwargs):
         method='get',
         role='search',
         style='display:flex;gap:1em;align-items:center;margin-bottom:2em;'
+    )
+
+
+# Filter controls for tags, date, and content type
+def TerminalFilterControls(
+    query='',
+    selected_tags=None,
+    selected_type='',
+    date_from='',
+    date_to='',
+    available_tags=None,
+    available_types=None
+):
+    """Filtering controls using FastHTML form elements"""
+    selected_tags = selected_tags or []
+    available_tags = available_tags or []
+    available_types = available_types or ['github', 'arxiv', 'youtube', 'huggingface', 'general']
+    
+    return Div(
+        H3('Filters'),
+        Form(
+            # Hidden field to preserve search query
+            Input(type='hidden', name='query', value=query),
+            
+            # Content Type Filter
+            Div(
+                Label('Content Type:', _for='type_filter'),
+                Select(
+                    Option('All Types', value='__all__', selected=(selected_type == '' or selected_type == '__all__')),
+                    *[
+                        Option(t.title(), value=t, selected=(selected_type == t))
+                        for t in available_types
+                    ],
+                    name='content_type',
+                    id='type_filter',
+                    style='width:100%;margin-bottom:1em;'
+                ),
+                style='margin-bottom:1em;'
+            ),
+            
+            # Keywords Filter
+            Div(
+                Label('Keywords (comma-separated):', _for='keywords_filter'),
+                Input(
+                    type='text',
+                    name='keywords',
+                    id='keywords_filter',
+                    placeholder='e.g., machine-learning, ai, python',
+                    value=','.join(selected_tags) if selected_tags else '',
+                    style='width:100%;margin-bottom:1em;'
+                ),
+                style='margin-bottom:1em;'
+            ),
+            
+            # Date Range Filter
+            Div(
+                Label('Date Range:', style='display:block;margin-bottom:0.5em;'),
+                Div(
+                    Input(
+                        type='date',
+                        name='date_from',
+                        value=date_from,
+                        placeholder='From date',
+                        style='flex:1;margin-right:0.5em;'
+                    ),
+                    Input(
+                        type='date',
+                        name='date_to',
+                        value=date_to,
+                        placeholder='To date',
+                        style='flex:1;margin-left:0.5em;'
+                    ),
+                    style='display:flex;gap:1em;'
+                ),
+                style='margin-bottom:1em;'
+            ),
+            
+            # Filter and Clear buttons
+            Div(
+                Button(
+                    'Apply Filters',
+                    type='submit',
+                    cls='button-primary',
+                    style='margin-right:1em;'
+                ),
+                Button(
+                    'Clear Filters',
+                    type='button',
+                    onclick="window.location='/search'",
+                    style='background:#666;'
+                ),
+                style='display:flex;gap:1em;'
+            ),
+            
+            action='/search',
+            method='get',
+            style='background:#222a22;padding:1.5em;border:1px solid #39ff1444;border-radius:4px;'
+        ),
+        cls='filter-controls',
+        style='margin-bottom:2em;'
     )
 
 
@@ -117,7 +217,14 @@ def TerminalSuggestionBox(suggestions):
 
 # Add stubs for ArticleTitle and ArticleMeta for now (to avoid NameError)
 def ArticleTitle(title):
-    return H3(title, cls='article-title')
+    # Check if title looks like a URL and make it clickable
+    if title and (title.startswith('http://') or title.startswith('https://')):
+        return H3(
+            A(title, href=title, target='_blank', cls='link'),
+            cls='article-title'
+        )
+    else:
+        return H3(title, cls='article-title')
 
 
 def ArticleMeta(meta):

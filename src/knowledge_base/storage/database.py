@@ -243,7 +243,10 @@ class Database:
                         EXISTS (
                             SELECT 1 FROM keywords k 
                             WHERE k.document_id = d.id 
-                            AND k.keyword = ANY(%s)
+                            AND EXISTS (
+                                SELECT 1 FROM unnest(%s) AS search_keyword 
+                                WHERE LOWER(k.keyword) = LOWER(search_keyword)
+                            )
                         )
                     ''')
                     params.append(query['keywords'])

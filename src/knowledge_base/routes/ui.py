@@ -14,6 +14,7 @@ from src.knowledge_base.ui.components import (
     TerminalArticleView,
     TerminalNavControls,
     TerminalSuggestionBox,
+    TerminalFilterControls,
 )
 from src.knowledge_base.core.content_manager import ContentManager
 
@@ -167,7 +168,12 @@ def index():
                 @keyframes blink-cursor { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
                 a, .link { color: #ffe066; text-decoration: underline; cursor: pointer; }
                 a:hover, .link:hover { color: #fff700; }
-                input, button { background: #101510; color: #39ff14; border: 1.5px solid #39ff14; font-family: inherit; padding: 0.4em 0.7em; border-radius: 2px; margin-bottom: 1em; }
+                input, button, select { background: #101510; color: #39ff14; border: 1.5px solid #39ff14; font-family: inherit; padding: 0.4em 0.7em; border-radius: 2px; margin-bottom: 1em; }
+                select option { background: #101510; color: #39ff14; }
+                label { color: #39ff14; display: block; margin-bottom: 0.5em; font-weight: bold; }
+                .filter-controls h3 { color: #ffe066; margin-top: 0; margin-bottom: 1em; text-transform: uppercase; letter-spacing: 0.05em; }
+                input[type="date"] { color: #39ff14; }
+                input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
                 .button-primary { background: #39ff14; color: #101510; font-weight: bold; text-transform: uppercase; }
                 .highlight { color: #ffe066; background: #222a22; padding: 0.1em 0.3em; border-radius: 2px; }
                 .result-item { border-left: 3px solid #39ff1444; padding-left: 1rem; margin-bottom: 1.5rem; }
@@ -273,14 +279,74 @@ def article_view(article_id: int):
 
 
 @rt('/search')
-def search_page(query: str = ""):
+def search_page(
+    query: str = "",
+    content_type: str = "",
+    keywords: str = "",
+    date_from: str = "",
+    date_to: str = ""
+):
     search_bar = TerminalSearchBar(placeholder="Search articles...", value=query)
     
-    # Use ContentManager for search if available
-    if query and content_manager:
+    # Handle "All Types" selection - convert to empty string for search
+    if content_type == "All Types" or content_type == "__all__":
+        content_type = ""
+    
+    # Parse keywords from comma-separated string
+    keyword_list = [keyword.strip() for keyword in keywords.split(',') if keyword.strip()] if keywords else []
+    
+    # Convert date strings to timestamps if provided
+    timestamp_from = None
+    timestamp_to = None
+    if date_from:
         try:
-            # Use ContentManager to search content
-            search_results = content_manager.search_content(text_query=query, limit=20)
+            dt = datetime.strptime(date_from, '%Y-%m-%d')
+            timestamp_from = int(dt.timestamp())
+        except ValueError:
+            logger.warning(f"Invalid date_from format: {date_from}")
+    if date_to:
+        try:
+            dt = datetime.strptime(date_to + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+            timestamp_to = int(dt.timestamp())
+        except ValueError:
+            logger.warning(f"Invalid date_to format: {date_to}")
+    
+    # Create filter controls
+    filter_controls = TerminalFilterControls(
+        query=query,
+        selected_tags=keyword_list,
+        selected_type=content_type,
+        date_from=date_from,
+        date_to=date_to
+    )
+    
+    # Use ContentManager for search if available
+    if content_manager:
+        try:
+            # Build search parameters
+            search_kwargs = {"limit": 20}
+            if query:
+                search_kwargs["text_query"] = query
+            if keyword_list:
+                search_kwargs["keywords"] = keyword_list
+            if content_type:
+                search_kwargs["content_type"] = content_type
+            
+            # Use ContentManager to search content with filters
+            search_results = content_manager.search_content(**search_kwargs)
+            
+            # Filter by date range if specified (post-filter since ContentManager doesn't support date filtering)
+            if timestamp_from or timestamp_to:
+                filtered_results = []
+                for result in search_results:
+                    result_timestamp = result.get("timestamp", 0)
+                    if timestamp_from and result_timestamp < timestamp_from:
+                        continue
+                    if timestamp_to and result_timestamp > timestamp_to:
+                        continue
+                    filtered_results.append(result)
+                search_results = filtered_results
+            
             filtered_articles = [
                 {
                     "id": result["id"],
@@ -295,76 +361,115 @@ def search_page(query: str = ""):
             try:
                 api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
                 search_url = f"{api_base_url}/content/search/"
-                response = requests.get(search_url, params={"query": query, "limit": 20})
+                params = {"limit": 20}
+                if query:
+                    params["query"] = query
+                response = requests.get(search_url, params=params)
                 
                 if response.status_code == 200:
                     search_results = response.json()
+                    
+                    # Apply client-side filtering for API results
+                    filtered_results = search_results
+                    if content_type:
+                        filtered_results = [r for r in filtered_results if r.get("type") == content_type]
+                    if keyword_list:
+                        filtered_results = [
+                            r for r in filtered_results 
+                            if any(keyword.lower() == k.lower() for k in r.get("keywords", []) for keyword in keyword_list)
+                        ]
+                    if timestamp_from or timestamp_to:
+                        filtered_results = [
+                            r for r in filtered_results
+                            if (not timestamp_from or r.get("timestamp", 0) >= timestamp_from) and
+                               (not timestamp_to or r.get("timestamp", 0) <= timestamp_to)
+                        ]
+                    
                     filtered_articles = [
                         {
                             "id": result["id"],
                             "title": result.get("url", "Untitled"),
                             "content": result.get("summary", result.get("content", ""))[:200]
                         }
-                        for result in search_results
+                        for result in filtered_results
                     ]
                 else:
                     filtered_articles = []
             except Exception as api_e:
                 logger.error(f"API fallback also failed: {api_e}")
-                # Final fallback to demo data
-                filtered_articles = [
-                    a for a in ARTICLES 
-                    if query.lower() in a["title"].lower() 
-                    or query.lower() in a["content"].lower()
-                    or any(query.lower() in tag.lower() for tag in a["tags"])
-                ]
-    elif query:
+                # Final fallback to demo data with filtering
+                filtered_articles = ARTICLES
+                if query:
+                    filtered_articles = [
+                        a for a in filtered_articles 
+                        if query.lower() in a["title"].lower() 
+                        or query.lower() in a["content"].lower()
+                        or any(query.lower() in tag.lower() for tag in a["tags"])
+                    ]
+                if content_type:
+                    filtered_articles = [a for a in filtered_articles if a.get("type") == content_type]
+                if keyword_list:
+                    filtered_articles = [
+                        a for a in filtered_articles 
+                        if any(keyword.lower() == t.lower() for t in a.get("tags", []) for keyword in keyword_list)
+                    ]
+    else:
         # No ContentManager available, try API directly
         try:
             api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
             search_url = f"{api_base_url}/content/search/"
-            response = requests.get(search_url, params={"query": query, "limit": 20})
+            params = {"limit": 20}
+            if query:
+                params["query"] = query
+            response = requests.get(search_url, params=params)
             
             if response.status_code == 200:
                 search_results = response.json()
+                
+                # Apply client-side filtering for API results
+                filtered_results = search_results
+                if content_type:
+                    filtered_results = [r for r in filtered_results if r.get("type") == content_type]
+                if keyword_list:
+                    filtered_results = [
+                        r for r in filtered_results 
+                        if any(keyword.lower() == k.lower() for k in r.get("keywords", []) for keyword in keyword_list)
+                    ]
+                if timestamp_from or timestamp_to:
+                    filtered_results = [
+                        r for r in filtered_results
+                        if (not timestamp_from or r.get("timestamp", 0) >= timestamp_from) and
+                           (not timestamp_to or r.get("timestamp", 0) <= timestamp_to)
+                    ]
+                
                 filtered_articles = [
                     {
                         "id": result["id"],
                         "title": result.get("url", "Untitled"),
                         "content": result.get("summary", result.get("content", ""))[:200]
                     }
-                    for result in search_results
+                    for result in filtered_results
                 ]
             else:
                 filtered_articles = []
         except Exception as e:
             logger.error(f"API search failed: {e}")
-            # Fallback to demo data
-            filtered_articles = [
-                a for a in ARTICLES 
-                if query.lower() in a["title"].lower() 
-                or query.lower() in a["content"].lower()
-                or any(query.lower() in tag.lower() for tag in a["tags"])
-            ]
-    else:
-        # No query - show recent content if ContentManager available
-        if content_manager:
-            try:
-                recent_results = content_manager.get_recent_content(limit=10)
-                filtered_articles = [
-                    {
-                        "id": result["id"],
-                        "title": result.get("url", "Untitled"),
-                        "content": result.get("summary", result.get("content", ""))[:200]
-                    }
-                    for result in recent_results
-                ]
-            except Exception as e:
-                logger.error(f"Error getting recent content: {e}")
-                filtered_articles = ARTICLES
-        else:
-            # Show demo data when no query and no ContentManager
+            # Fallback to demo data with filtering
             filtered_articles = ARTICLES
+            if query:
+                filtered_articles = [
+                    a for a in filtered_articles 
+                    if query.lower() in a["title"].lower() 
+                    or query.lower() in a["content"].lower()
+                    or any(query.lower() in tag.lower() for tag in a["tags"])
+                ]
+            if content_type:
+                filtered_articles = [a for a in filtered_articles if a.get("type") == content_type]
+            if keyword_list:
+                filtered_articles = [
+                    a for a in filtered_articles 
+                    if any(keyword.lower() == t.lower() for t in a.get("tags", []) for keyword in keyword_list)
+                ]
     
     results = TerminalResultsList([
         {
@@ -375,15 +480,29 @@ def search_page(query: str = ""):
         for a in filtered_articles
     ])
     
+    # Create suggestions based on filters and results
     suggestions = []
-    if query:
-        suggestions.append(f"Found {len(filtered_articles)} result(s) for '{query}'")
+    filter_applied = bool(query or content_type or keyword_list or date_from or date_to)
+    if filter_applied:
+        filter_parts = []
+        if query:
+            filter_parts.append(f"text: '{query}'")
+        if content_type:
+            filter_parts.append(f"type: {content_type}")
+        if keyword_list:
+            filter_parts.append(f"keywords: {', '.join(keyword_list)}")
+        if date_from or date_to:
+            date_range = f"{date_from or 'any'} to {date_to or 'any'}"
+            filter_parts.append(f"dates: {date_range}")
+        
+        suggestions.append(f"Found {len(filtered_articles)} result(s) with filters: {'; '.join(filter_parts)}")
     else:
-        suggestions.append("Try searching for 'retro' or 'guide'.")
+        suggestions.append("Use filters below to narrow your search or try searching for 'retro' or 'guide'.")
     
     layout = MainLayout(
         "SEARCH RESULTS",
         search_bar,
+        filter_controls,
         results,
         TerminalSuggestionBox(suggestions),
     )
