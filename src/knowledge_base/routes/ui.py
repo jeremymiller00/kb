@@ -102,6 +102,7 @@ def index():
                             "snippet": a["content"][:60]
                         }
                         for a in ARTICLES
+
                     ]
             except Exception:
                 # Final fallback to demo data
@@ -160,24 +161,7 @@ def index():
     return Html(
         Head(
             Title("Knowledge Base - Retro Terminal UI"),
-            Style("""
-                body { background: #101510; color: #39ff14; font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', monospace; margin: 0; padding: 0; }
-                .terminal-container { background: #181c18; border: 2px solid #39ff14; border-radius: 4px; padding: 2rem; margin: 2rem auto; max-width: 900px; box-shadow: 0 0 24px #39ff1433; }
-                .terminal-title { font-size: 1.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; text-align: center; border-bottom: 2px solid #39ff14; padding-bottom: 0.5rem; }
-                .blink { animation: blink-cursor 1.1s steps(1) infinite; }
-                @keyframes blink-cursor { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-                a, .link { color: #ffe066; text-decoration: underline; cursor: pointer; }
-                a:hover, .link:hover { color: #fff700; }
-                input, button, select { background: #101510; color: #39ff14; border: 1.5px solid #39ff14; font-family: inherit; padding: 0.4em 0.7em; border-radius: 2px; margin-bottom: 1em; }
-                select option { background: #101510; color: #39ff14; }
-                label { color: #39ff14; display: block; margin-bottom: 0.5em; font-weight: bold; }
-                .filter-controls h3 { color: #ffe066; margin-top: 0; margin-bottom: 1em; text-transform: uppercase; letter-spacing: 0.05em; }
-                input[type="date"] { color: #39ff14; }
-                input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
-                .button-primary { background: #39ff14; color: #101510; font-weight: bold; text-transform: uppercase; }
-                .highlight { color: #ffe066; background: #222a22; padding: 0.1em 0.3em; border-radius: 2px; }
-                .result-item { border-left: 3px solid #39ff1444; padding-left: 1rem; margin-bottom: 1.5rem; }
-            """),
+            Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
         ),
         Body(
             layout,
@@ -257,19 +241,7 @@ def article_view(article_id: int):
     return Html(
         Head(
             Title(article["title"]),
-            Style("""
-                body { background: #101510; color: #39ff14; font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', monospace; margin: 0; padding: 0; }
-                .terminal-container { background: #181c18; border: 2px solid #39ff14; border-radius: 4px; padding: 2rem; margin: 2rem auto; max-width: 900px; box-shadow: 0 0 24px #39ff1433; }
-                .terminal-title { font-size: 1.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; text-align: center; border-bottom: 2px solid #39ff14; padding-bottom: 0.5rem; }
-                .blink { animation: blink-cursor 1.1s steps(1) infinite; }
-                @keyframes blink-cursor { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-                a, .link { color: #ffe066; text-decoration: underline; cursor: pointer; }
-                a:hover, .link:hover { color: #fff700; }
-                input, button { background: #101510; color: #39ff14; border: 1.5px solid #39ff14; font-family: inherit; padding: 0.4em 0.7em; border-radius: 2px; margin-bottom: 1em; }
-                .button-primary { background: #39ff14; color: #101510; font-weight: bold; text-transform: uppercase; }
-                .highlight { color: #ffe066; background: #222a22; padding: 0.1em 0.3em; border-radius: 2px; }
-                .result-item { border-left: 3px solid #39ff1444; padding-left: 1rem; margin-bottom: 1.5rem; }
-            """),
+            Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
         ),
         Body(
             layout,
@@ -510,19 +482,7 @@ def search_page(
     return Html(
         Head(
             Title("Search - Knowledge Base"),
-            Style("""
-                body { background: #101510; color: #39ff14; font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', monospace; margin: 0; padding: 0; }
-                .terminal-container { background: #181c18; border: 2px solid #39ff14; border-radius: 4px; padding: 2rem; margin: 2rem auto; max-width: 900px; box-shadow: 0 0 24px #39ff1433; }
-                .terminal-title { font-size: 1.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; text-align: center; border-bottom: 2px solid #39ff14; padding-bottom: 0.5rem; }
-                .blink { animation: blink-cursor 1.1s steps(1) infinite; }
-                @keyframes blink-cursor { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-                a, .link { color: #ffe066; text-decoration: underline; cursor: pointer; }
-                a:hover, .link:hover { color: #fff700; }
-                input, button { background: #101510; color: #39ff14; border: 1.5px solid #39ff14; font-family: inherit; padding: 0.4em 0.7em; border-radius: 2px; margin-bottom: 1em; }
-                .button-primary { background: #39ff14; color: #101510; font-weight: bold; text-transform: uppercase; }
-                .highlight { color: #ffe066; background: #222a22; padding: 0.1em 0.3em; border-radius: 2px; }
-                .result-item { border-left: 3px solid #39ff1444; padding-left: 1rem; margin-bottom: 1.5rem; }
-            """),
+            Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
         ),
         Body(
             layout,

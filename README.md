@@ -42,6 +42,11 @@ python scr/app.py
 uvicorn ui:app --reload --host 0.0.0.0 --port 5001
 ```
 
+* A dev server can also be started by
+```sh
+python src/knowledge_base/ui/main.py
+```
+
 ## CLI
 All CLI commands should be run using `python src/cli.py ...`.
 

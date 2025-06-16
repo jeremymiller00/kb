@@ -144,6 +144,35 @@ input:focus, select:focus, textarea:focus, button:focus {
   border-radius: 4px;
 }
 
+/* Filter controls styling */
+label {
+  color: #39ff14;
+  display: block;
+  margin-bottom: 0.5em;
+  font-weight: bold;
+}
+
+select option {
+  background: #101510;
+  color: #39ff14;
+}
+
+.filter-controls h3 {
+  color: #ffe066;
+  margin-top: 0;
+  margin-bottom: 1em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+input[type="date"] {
+  color: #39ff14;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 /* Optional: retro scanlines effect */
 .scanlines {
   position: relative;
