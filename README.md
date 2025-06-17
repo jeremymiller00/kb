@@ -35,7 +35,7 @@ Once the virtual environment is activated, you can run the application and CLI c
 * Start postgres
 * Start the fastapi backend in a separate terminal window
 ```sh
-python scr/app.py
+python src/app.py
 ```
 * Start the UI in a separate terminal window
 ```sh
