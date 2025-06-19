@@ -6,6 +6,7 @@ from typing import Optional
 from .base import ContentExtractor
 from ..utils.logger import logger
 
+
 class HTMLExtractor(ContentExtractor):
     def __init__(self):
         self.logger = logger

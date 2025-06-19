@@ -11,15 +11,12 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
-from knowledge_base.routes import content, process, admin
+from knowledge_base.routes import content, admin  # process: file was deprecated
 from knowledge_base.utils.logger import logger
 
 # Load environment variables
 load_dotenv()
 
-# # Database connection
-# DB_CONN_STRING = os.getenv("DB_CONN_STRING")
-# engine = create_engine(DB_CONN_STRING)
 
 # FastAPI app
 app = FastAPI(title="Knowledge Base API")

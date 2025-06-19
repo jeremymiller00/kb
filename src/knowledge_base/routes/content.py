@@ -41,19 +41,6 @@ def get_content(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# @router.get("/", response_model=List[DocumentResponse])
-# async def get_all_content(
-#     skip: int = 0, 
-#     limit: int = 100, 
-#     db: Database = Depends(get_db)
-# ):
-#     try:
-#         documents = await db.get_all_content(skip=skip, limit=limit)
-#         return [DocumentResponse(**doc) for doc in documents]
-#     except Exception as e:
-#         logger.error(f"Error retrieving documents: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
 @router.post("/{url:path}", response_model=ProcessResponse)
 def process_url(
     url: str = Path(..., description="URL to process"),

@@ -3,6 +3,7 @@ import arxiv
 from .base import ContentExtractor
 from ..utils.logger import logger
 
+
 class ArxivExtractor(ContentExtractor):
     def __init__(self):
         self.logger = logger

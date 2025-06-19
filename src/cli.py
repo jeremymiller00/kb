@@ -199,38 +199,6 @@ def batch(
     logger.info("Batch processing complete")
 
 
-###########################
-##### dummy functions #####
-###########################
-
-# @process_app.command("batch")
-# def process_batch(
-#     file: Path = typer.Argument(..., help="File containing URLs"),
-# ):
-#     """Process multiple URLs from a file"""
-#     with file.open() as f:
-#         urls = f.readlines()
-#     for url in urls:
-#         process_url(url.strip())
-
-# @db_app.command("load")
-# def load_to_db(
-#     path: Path = typer.Argument(..., help="Path to content"),
-#     db_name: str = typer.Option("default", "--db", "-d", help="Database name"),
-# ):
-#     """Load processed content into database"""
-#     db = Database(db_name)
-#     db.load_content(path)
-
-# @db_app.command("query")
-# def query_db(
-#     query: str = typer.Argument(..., help="Search query"),
-#     limit: int = typer.Option(10, "--limit", "-l", help="Max results"),
-# ):
-#     """Search content in database"""
-#     db = Database()
-#     results = db.search(query, limit=limit) # This was the old search method
-#     console.print(results)
 
 @db_app.command("query")
 def query_db(

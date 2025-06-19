@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 from sqlalchemy.orm import DeclarativeBase  # New import
 from pydantic import BaseModel, HttpUrl, Field, field_validator, ConfigDict
 
+
 # Updated base class declaration
 class Base(DeclarativeBase):
     pass
@@ -79,6 +80,7 @@ class DocumentCreate(BaseModel):
             }
         }
     )
+
 
 class ModelConfig(BaseModel):
     model_name: str

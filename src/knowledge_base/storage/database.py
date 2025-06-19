@@ -2,7 +2,6 @@
 PostgreSQL database operations for the knowledge base.
 '''
 
-
 import os
 from typing import Dict, List, Any, Optional
 import psycopg2

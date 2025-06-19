@@ -152,40 +152,40 @@ class ContentManager():
 
         return
 
-    def create_obsidian_note(self, json_file_path, output_directory):
-        self.logger.debug(f"Creating Obsidian note from JSON file: {json_file_path}")
-        with open(json_file_path, 'r') as file:
-            doc_data = json.load(file)
-        self.logger.debug(f"Loaded JSON data: {doc_data}")
+    # def create_obsidian_note(self, json_file_path, output_directory):
+    #     self.logger.debug(f"Creating Obsidian note from JSON file: {json_file_path}")
+    #     with open(json_file_path, 'r') as file:
+    #         doc_data = json.load(file)
+    #     self.logger.debug(f"Loaded JSON data: {doc_data}")
 
-        url = doc_data.get('url', '')
-        filename = urlparse(url).path.split('/')[-1]
-        if not filename:
-            filename = url.replace('://', '_').replace('/', '_')
-        filename = filename.strip() + '.md'
-        self.logger.debug(f"Filename created: {filename}")
+    #     url = doc_data.get('url', '')
+    #     filename = urlparse(url).path.split('/')[-1]
+    #     if not filename:
+    #         filename = url.replace('://', '_').replace('/', '_')
+    #     filename = filename.strip() + '.md'
+    #     self.logger.debug(f"Filename created: {filename}")
 
-        content = "---\n"
-        content += f"url: {url}\n"
-        content += f"type: {doc_data.get('type', '')}\n"
-        content += "tags:\n"
-        content += " - literature-note\n"
-        for keyword in doc_data.get('keywords', []):
-            content += f" - {keyword}\n"
-        content += "---\n\n"
-        content += doc_data.get('obsidian_markdown', '')
-        self.logger.debug(f"Obsidian note content created: {content}")
+    #     content = "---\n"
+    #     content += f"url: {url}\n"
+    #     content += f"type: {doc_data.get('type', '')}\n"
+    #     content += "tags:\n"
+    #     content += " - literature-note\n"
+    #     for keyword in doc_data.get('keywords', []):
+    #         content += f" - {keyword}\n"
+    #     content += "---\n\n"
+    #     content += doc_data.get('obsidian_markdown', '')
+    #     self.logger.debug(f"Obsidian note content created: {content}")
 
-        os.makedirs(output_directory, exist_ok=True)
-        self.logger.debug(f"Output directory created: {output_directory}")
+    #     os.makedirs(output_directory, exist_ok=True)
+    #     self.logger.debug(f"Output directory created: {output_directory}")
 
-        output_path = os.path.join(output_directory, filename)
-        with open(output_path, 'w') as file:
-            file.write(content)
-        self.logger.debug(f"Obsidian note saved: {output_path}")
+    #     output_path = os.path.join(output_directory, filename)
+    #     with open(output_path, 'w') as file:
+    #         file.write(content)
+    #     self.logger.debug(f"Obsidian note saved: {output_path}")
 
-        self.logger.info(f"Obsidian note created: {output_path}")
-        return
+    #     self.logger.info(f"Obsidian note created: {output_path}")
+    #     return
 
     def _standardize_title_for_obsidian(self, title: str, max_length: int = 80) -> str:
         """
@@ -257,10 +257,10 @@ class ContentManager():
                 if len(path_parts) > 1 and name_part.isdigit(): # If last part is just an ID, try parent
                     parent_part = path_parts[-2]
                     parent_part, _ = os.path.splitext(parent_part)
-                    if not parent_part.isdigit(): # Don't use if parent is also just an ID
-                         base_title_for_filename = parent_part
+                    if not parent_part.isdigit():  # Don't use if parent is also just an ID
+                        base_title_for_filename = parent_part
                     else:
-                        base_title_for_filename = name_part # Fallback to the ID-like part
+                        base_title_for_filename = name_part  # Fallback to the ID-like part
                 else:
                     base_title_for_filename = name_part
             elif parsed_url.netloc: # If no path, use domain (sanitized)
@@ -284,7 +284,6 @@ class ContentManager():
                 final_obsidian_content = f"# {standardized_title}\n{lines[1]}"
             else: # Only H1 line existed
                 final_obsidian_content = f"# {standardized_title}"
-
 
         content_header = "---\n"
         content_header += f"url: {url}\n"
