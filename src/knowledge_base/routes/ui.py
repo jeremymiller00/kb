@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 import asyncio
 from typing import Optional
-from src.knowledge_base.ui.components import (
+from ..ui.components import (
     MainLayout,
     TerminalContainer,
     TerminalSearchBar,
@@ -20,10 +20,10 @@ from src.knowledge_base.ui.components import (
     TerminalUrlProcessor,
     HomeButton,
 )
-from src.knowledge_base.core.content_manager import ContentManager
-from src.knowledge_base.extractors.extractor_factory import ExtractorFactory
-from src.knowledge_base.ai.llm_factory import LLMFactory
-from src.knowledge_base.storage.database import Database
+from ..core.content_manager import ContentManager
+from ..extractors.extractor_factory import ExtractorFactory
+from ..ai.llm_factory import LLMFactory
+from ..storage.database import Database
 
 app, rt = fast_app()
 

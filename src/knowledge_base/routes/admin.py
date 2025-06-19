@@ -4,13 +4,13 @@ API Routes for Adminstrative tasks, including managing default model configurati
 from fastapi import APIRouter, HTTPException, status
 from typing import Dict
 
-from knowledge_base.config_manager import (
+from ..config_manager import (
     get_default_llm_provider,
     set_default_llm_provider,
     get_default_embedding_model,
     set_default_embedding_model
 )
-from knowledge_base.core.models import ModelConfig # Assuming ModelConfig is for { "model_name": "..." }
+from ..core.models import ModelConfig # Assuming ModelConfig is for { "model_name": "..." }
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 

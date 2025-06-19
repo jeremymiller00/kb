@@ -4,12 +4,12 @@ import traceback
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Path, Query
 
-from knowledge_base.core.models import DocumentResponse, DocumentCreate, ProcessResponse, ProcessOptions
-from knowledge_base.storage.database import Database
-from knowledge_base.utils.logger import logger
-from knowledge_base.core.content_manager import ContentManager
-from knowledge_base.extractors.extractor_factory import ExtractorFactory
-from knowledge_base.ai.llm_factory import LLMFactory
+from ..core.models import DocumentResponse, DocumentCreate, ProcessResponse, ProcessOptions
+from ..storage.database import Database
+from ..utils.logger import logger
+from ..core.content_manager import ContentManager
+from ..extractors.extractor_factory import ExtractorFactory
+from ..ai.llm_factory import LLMFactory
 
 
 router = APIRouter(prefix="/content", tags=["Content"])
