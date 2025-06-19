@@ -237,6 +237,50 @@ def TerminalSuggestionBox(suggestions):
     )
 
 
+# URL Processing form component
+def TerminalUrlProcessor(placeholder='Enter URL to process...', **kwargs):
+    """URL processing form for the home page"""
+    return Div(
+        H3('Process URL'),
+        P('Paste a URL below to extract content, generate summary, and save to your knowledge base.'),
+        Form(
+            Input(
+                type='url',
+                name='url',
+                placeholder=placeholder,
+                required=True,
+                autofocus=False,
+                style='flex:1;margin-bottom:1em;',
+                **kwargs
+            ),
+            Div(
+                Label(
+                    Input(type='checkbox', name='debug', value='true'),
+                    ' Debug mode (don\'t save to disk)',
+                    style='margin-bottom:1em;display:flex;align-items:center;gap:0.5em;'
+                ),
+                Label(
+                    Input(type='checkbox', name='jina', value='true'),
+                    ' Use Jina for processing (recommended for PDFs)',
+                    style='margin-bottom:1em;display:flex;align-items:center;gap:0.5em;'
+                ),
+                style='margin-bottom:1em;'
+            ),
+            Button(
+                'Process URL',
+                type='submit',
+                cls='button-primary',
+                style='width:100%;'
+            ),
+            action='/process',
+            method='post',
+            style='background:#222a22;padding:1.5em;border:1px solid #39ff1444;border-radius:4px;'
+        ),
+        cls='url-processor',
+        style='margin-bottom:2em;'
+    )
+
+
 # Add stubs for ArticleTitle and ArticleMeta for now (to avoid NameError)
 def ArticleTitle(title):
     # Check if title looks like a URL and make it clickable

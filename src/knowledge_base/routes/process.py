@@ -4,12 +4,12 @@
 # import traceback
 # from fastapi import APIRouter, HTTPException, Depends, Path, Query
 
-# from knowledge_base.core.models import ProcessResponse, ProcessOptions
-# from knowledge_base.core.content_manager import ContentManager
-# from knowledge_base.storage.database import Database
-# from knowledge_base.utils.logger import logger
-# from knowledge_base.extractors.extractor_factory import ExtractorFactory
-# from knowledge_base.ai.llm_factory import LLMFactory
+# from src.knowledge_base.core.models import ProcessResponse, ProcessOptions
+# from src.knowledge_base.core.content_manager import ContentManager
+# from src.knowledge_base.storage.database import Database
+# from src.knowledge_base.utils.logger import logger
+# from src.knowledge_base.extractors.extractor_factory import ExtractorFactory
+# from src.knowledge_base.ai.llm_factory import LLMFactory
 
 # # logger = configure_logging()
 # router = APIRouter(prefix="/process", tags=["process"])

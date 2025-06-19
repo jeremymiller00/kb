@@ -4,7 +4,7 @@ import re
 from typing import Optional
 
 from .base import ContentExtractor
-from knowledge_base.utils.logger import logger
+from ..utils.logger import logger
 
 class HTMLExtractor(ContentExtractor):
     def __init__(self):

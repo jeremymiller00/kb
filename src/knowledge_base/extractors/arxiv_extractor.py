@@ -1,7 +1,7 @@
 import re
 import arxiv
 from .base import ContentExtractor
-from knowledge_base.utils.logger import logger
+from ..utils.logger import logger
 
 class ArxivExtractor(ContentExtractor):
     def __init__(self):

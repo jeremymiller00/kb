@@ -2,7 +2,7 @@
 
 # logger = configure_logging()
 
-from knowledge_base.config_manager import get_default_llm_provider
+from ..config_manager import get_default_llm_provider
 
 class LLMFactory:
     def __init__(self):
@@ -30,9 +30,22 @@ class LLMFactory:
         provider_class_name = self.providers[provider_name]
         
         try:
-            module = __import__(
-                f"knowledge_base.ai.{self.modules[provider_name].lower()}", 
-                fromlist=[provider_class_name])
+            # Try to import using relative import first, then absolute import with src prefix
+            try:
+                from . import openai_llm, remote_llm
+                module_name = self.modules[provider_name].lower()
+                if module_name == 'openai_llm':
+                    module = openai_llm
+                elif module_name == 'anthropic_llm' or module_name == 'remote_llm':
+                    module = remote_llm
+                else:
+                    raise ImportError(f"Unknown module: {module_name}")
+            except ImportError:
+                # Fallback to absolute import
+                module = __import__(
+                    f"src.knowledge_base.ai.{self.modules[provider_name].lower()}", 
+                    fromlist=[provider_class_name])
+            
             provider_class = getattr(module, provider_class_name)
             
             instance = provider_class()

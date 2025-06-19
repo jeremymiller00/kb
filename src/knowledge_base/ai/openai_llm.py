@@ -5,8 +5,8 @@ import backoff
 from functools import partial
 from dotenv import load_dotenv
 
-from knowledge_base.ai.base_llm import BaseLLM
-from knowledge_base.utils.prompts import PROMPTS
+from .base_llm import BaseLLM
+from ..utils.prompts import PROMPTS
 
 load_dotenv()
 
