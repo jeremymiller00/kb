@@ -4,11 +4,22 @@
 from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span, Select, Option, Label
 
 # Main layout wrapper
-def MainLayout(title, *content, **kwargs):
+def MainLayout(title, *content, show_home_button=True, **kwargs):
     """Main layout wrapper that includes terminal styling and accessibility"""
+    elements = []
+    
+    # Add home button if requested and not on home page
+    if show_home_button and title != "KNOWLEDGE BASE":
+        elements.append(HomeButton())
+    
+    # Add title
+    elements.append(H1(title + " ", Span("_", cls="blink"), cls="terminal-title"))
+    
+    # Add main content
+    elements.append(Div(*content, cls="terminal-content"))
+    
     return Div(
-        H1(title + " ", Span("_", cls="blink"), cls="terminal-title"),
-        Div(*content, cls="terminal-content"),
+        *elements,
         cls='terminal-container scanlines',
         **kwargs
     )
@@ -22,6 +33,17 @@ def TerminalContainer(*c, **kwargs):
 def TerminalButton(label, primary=False, **kwargs):
     btn_cls = 'button-primary' if primary else ''
     return Button(label, cls=btn_cls, **kwargs)
+
+
+# Home button component
+def HomeButton():
+    """Home button that appears at the top of every page"""
+    return A(
+        "🏠 HOME",
+        href="/",
+        cls="home-button",
+        style="display:inline-block;padding:0.5em 1em;background:#39ff14;color:#000;text-decoration:none;border-radius:4px;font-weight:bold;margin-bottom:1em;font-family:monospace;"
+    )
 
 
 # Search bar (input + button) using FastHTML Form, Input, and Button components

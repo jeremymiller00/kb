@@ -15,6 +15,7 @@ from src.knowledge_base.ui.components import (
     TerminalNavControls,
     TerminalSuggestionBox,
     TerminalFilterControls,
+    HomeButton,
 )
 from src.knowledge_base.core.content_manager import ContentManager
 
