@@ -32,6 +32,18 @@ LLM_MODEL_NAME="<default llm>" # Example: "gpt-4o-mini" or other model identifie
 
 ## Usage
 Once the virtual environment is activated, you can run the application and CLI commands.
+
+### Single Command Option
+```sh
+./start.sh
+```
+The script will:
+- Check/start PostgreSQL via Homebrew
+- Start FastAPI backend on port 8000
+- Start FastHTML UI on port 5001
+- Handle graceful shutdown with Ctrl+C
+
+### Multi Command Option
 * Start postgres
 * Start the fastapi backend in a separate terminal window
 ```sh
