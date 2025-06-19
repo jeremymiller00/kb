@@ -109,7 +109,7 @@ class Database:
                 
                 conn.commit()
         except Exception as e:
-            print.error(f"Error setting up database: {e}")
+            self.logger.error(f"Error setting up database: {e}")
             conn.rollback()
             raise
         self.logger.info("Database setup complete")
@@ -163,7 +163,7 @@ class Database:
                 return str(document_id)
                 
         except Exception as e:
-            print(f"Error storing content: {e}")
+            self.logger.error(f"Error storing content: {e}")
             conn.rollback()
             raise
     
@@ -213,7 +213,7 @@ class Database:
                 }
                 
         except Exception as e:
-            print(f"Error retrieving content: {e}")
+            self.logger.error(f"Error retrieving content: {e}")
             raise
     
     def search_content(
@@ -304,7 +304,7 @@ class Database:
                 return results
    
         except Exception as e:
-            print(f"Error searching content: {e}")
+            self.logger.error(f"Error searching content: {e}")
             raise
 
     def update_content(
@@ -364,7 +364,7 @@ class Database:
                 return True
                 
         except Exception as e:
-            print(f"Error updating content: {e}")
+            self.logger.error(f"Error updating content: {e}")
             conn.rollback()
             raise
     
@@ -395,7 +395,7 @@ class Database:
                 return True
                 
         except Exception as e:
-            print(f"Error deleting content: {e}")
+            self.logger.error(f"Error deleting content: {e}")
             conn.rollback()
             raise
     

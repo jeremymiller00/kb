@@ -2,15 +2,17 @@
 Simple CLI for processing URLs and saving content to disk and database
 '''
 
+import json
 import logging
-import os
 import math
+import os
 from pathlib import Path
 from datetime import datetime
 
 import typer
 from rich import print
 from rich.console import Console
+from rich.table import Table
 from rich.traceback import install
 
 from knowledge_base.extractors.extractor_factory import ExtractorFactory
@@ -149,7 +151,6 @@ def process_url(
                     }
                     # Ensure embedding is a list of floats (example, adjust if your model returns something else)
                     if isinstance(embedding, str):
-                        import json
                         try:
                             embedding = json.loads(embedding)
                         except json.JSONDecodeError:
@@ -267,7 +268,6 @@ def query_db(
             print("[yellow]No results found matching your criteria.[/yellow]")
             return
 
-        from rich.table import Table
         table = Table(title=f"Query Results (Limit: {limit})")
         table.add_column("ID", style="dim", width=6)
         table.add_column("URL", style="cyan", no_wrap=False, max_width=50)
@@ -321,7 +321,6 @@ def load_to_db(
     error_count = 0
     
     try:
-        import json
         conn_string = os.getenv('TEST_DB_CONN_STRING') if debug else os.getenv('DB_CONN_STRING')
         if not conn_string:
             raise ValueError("Database connection string not found. Set DB_CONN_STRING or TEST_DB_CONN_STRING.")
