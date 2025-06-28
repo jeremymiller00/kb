@@ -30,7 +30,7 @@
   - [x] 2.3 Connect the search form to backend logic in `content_manager.py` for full-text and keyword search.
   - [x] 2.3.1 Make the url on each individual article page a link that opens in a new tab.
   - [x] 2.4 Add filtering controls for tags, date, and author using FastHTML form elements.
-  - [ ] 2.5 Display search results using a styled results list component.
+  - [x] 2.5 Display search results using a styled results list component.
   - [ ] 2.6 Paginate or lazy-load results for large result sets.
   - [ ] 2.7 Write unit tests for search/filter logic and routes.
 

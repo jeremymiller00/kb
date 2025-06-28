@@ -198,6 +198,7 @@ This ensures more readable and consistent note titles in your Obsidian vault.
    * keyword counts, similarity
    * export data
 * Discovery module
+   * The search sucks in PG
    * Find related content based on some input
    * topic, title, keyword, relationship
    * recommend content

@@ -174,20 +174,61 @@ def TerminalFilterControls(
 
 # Results list
 def TerminalResultsList(results, on_click=None):
-    # results: list of dicts with 'title', 'snippet', 'id'
+    """Enhanced results list with better styling and metadata display"""
+    if not results:
+        return Div(
+            Div(
+                H3("No Results Found", style="color: #ffe066; text-align: center;"),
+                P("Try adjusting your search terms or filters.", style="color: #39ff14; text-align: center; opacity: 0.7;"),
+                cls="no-results",
+                style="padding: 2em; text-align: center; border: 1px dashed #39ff1444; border-radius: 4px;"
+            ),
+            cls='results-list'
+        )
+    
     return Div(
+        Div(
+            H3(f"Found {len(results)} result{'s' if len(results) != 1 else ''}", 
+               style="color: #ffe066; margin-bottom: 1.5em; font-size: 1.2em;"),
+            cls="results-header"
+        ),
         *[
             Div(
-                A(
-                    r['title'],
-                    href=f"/article/{r['id']}",
-                    cls='link',
-                    onclick=on_click
+                # Result number and title
+                Div(
+                    Span(f"[{i+1:02d}]", cls="result-number"),
+                    A(
+                        r['title'] if r['title'] else "Untitled",
+                        href=f"/article/{r['id']}",
+                        cls='result-title',
+                        onclick=on_click
+                    ),
+                    cls="result-header-row",
+                    style="display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.5em;"
                 ),
-                Div(r.get('snippet', ''), cls='highlight'),
+                # Snippet/preview
+                Div(
+                    r.get('snippet', ''),
+                    cls='result-snippet',
+                    style="color: #cccccc; font-size: 0.9em; line-height: 1.4; margin-left: 2.5em;"
+                ),
+                # Additional metadata if available
+                Div(
+                    *[
+                        Span(f"ID: {r['id']}", cls="result-meta-item"),
+                        Span("•", style="color: #39ff1444; margin: 0 0.5em;"),
+                        Span(f"Type: {r.get('type', 'unknown')}", cls="result-meta-item") if r.get('type') else None,
+                        Span("•", style="color: #39ff1444; margin: 0 0.5em;") if r.get('type') else None,
+                        Span(f"Length: {len(r.get('snippet', ''))} chars", cls="result-meta-item")
+                    ],
+                    cls="result-metadata",
+                    style="margin-left: 2.5em; margin-top: 0.5em; font-size: 0.8em; color: #39ff1466; display: flex; align-items: center;"
+                ),
                 cls='result-item',
-                style='margin-bottom:1.5em;'
-            ) for r in results
+                style='margin-bottom: 2em; padding: 1em; border: 1px solid #39ff1422; border-radius: 4px; transition: all 0.2s ease;',
+                onmouseover="this.style.borderColor='#39ff1466'; this.style.backgroundColor='#1a1f1a';",
+                onmouseout="this.style.borderColor='#39ff1422'; this.style.backgroundColor='transparent';"
+            ) for i, r in enumerate(results)
         ],
         cls='results-list'
     )

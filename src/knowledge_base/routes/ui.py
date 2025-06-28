@@ -1,7 +1,7 @@
 # src/knowledge_base/routes/ui.py
 # Main FastHTML route handlers for the Knowledge Base UI (retro terminal)
 
-from fasthtml.common import fast_app, serve, Style, Div, Html, Head, Title, Link, Body, Form, RedirectResponse, H3, P, A
+from fasthtml.common import fast_app, serve, Style, Div, Html, Head, Title, Link, Body, Form, RedirectResponse, H3, P, A, Script
 import requests
 import os
 import logging
@@ -80,7 +80,8 @@ def index():
                 {
                     "id": result["id"],
                     "title": result.get("url", "Untitled"),
-                    "snippet": result.get("summary", result.get("content", ""))[:60]
+                    "snippet": result.get("summary", result.get("content", ""))[:100] + ("..." if len(result.get("summary", result.get("content", ""))) > 100 else ""),
+                    "type": result.get("type", "unknown")
                 }
                 for result in recent_results
             ]
@@ -98,7 +99,8 @@ def index():
                         {
                             "id": result["id"],
                             "title": result.get("url", "Untitled"),
-                            "snippet": result.get("summary", result.get("content", ""))[:60]
+                            "snippet": result.get("summary", result.get("content", ""))[:100] + ("..." if len(result.get("summary", result.get("content", ""))) > 100 else ""),
+                            "type": result.get("type", "unknown")
                         }
                         for result in search_results
                     ]
@@ -107,10 +109,10 @@ def index():
                         {
                             "id": a["id"],
                             "title": a["title"],
-                            "snippet": a["content"][:60]
+                            "snippet": a["content"][:100] + ("..." if len(a["content"]) > 100 else ""),
+                            "type": a.get("type", "demo")
                         }
                         for a in ARTICLES
-
                     ]
             except Exception:
                 # Final fallback to demo data
@@ -118,7 +120,8 @@ def index():
                     {
                         "id": a["id"],
                         "title": a["title"],
-                        "snippet": a["content"][:60]
+                        "snippet": a["content"][:100] + ("..." if len(a["content"]) > 100 else ""),
+                        "type": a.get("type", "demo")
                     }
                     for a in ARTICLES
                 ]
@@ -135,7 +138,8 @@ def index():
                     {
                         "id": result["id"],
                         "title": result.get("url", "Untitled"),
-                        "snippet": result.get("summary", result.get("content", ""))[:60]
+                        "snippet": result.get("summary", result.get("content", ""))[:100] + ("..." if len(result.get("summary", result.get("content", ""))) > 100 else ""),
+                        "type": result.get("type", "unknown")
                     }
                     for result in search_results
                 ]
@@ -144,7 +148,8 @@ def index():
                     {
                         "id": a["id"],
                         "title": a["title"],
-                        "snippet": a["content"][:60]
+                        "snippet": a["content"][:100] + ("..." if len(a["content"]) > 100 else ""),
+                        "type": a.get("type", "demo")
                     }
                     for a in ARTICLES
                 ]
@@ -170,7 +175,8 @@ def index():
     return Html(
         Head(
             Title("Knowledge Base - Retro Terminal UI"),
-            Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
+            Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
+            Script(src="/static/js/style-toggle.js"),
         ),
         Body(
             layout,
@@ -250,7 +256,8 @@ def article_view(article_id: int):
     return Html(
         Head(
             Title(article["title"]),
-            Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
+            Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
+            Script(src="/static/js/style-toggle.js"),
         ),
         Body(
             layout,
@@ -332,7 +339,9 @@ def search_page(
                 {
                     "id": result["id"],
                     "title": result.get("url", "Untitled"),  # Use URL as title if no title field
-                    "content": result.get("summary", result.get("content", ""))[:200]
+                    "content": result.get("summary", result.get("content", ""))[:200],
+                    "type": result.get("type", "unknown"),
+                    "snippet": result.get("summary", result.get("content", ""))[:150] + ("..." if len(result.get("summary", result.get("content", ""))) > 150 else "")
                 }
                 for result in search_results
             ]
@@ -370,7 +379,9 @@ def search_page(
                         {
                             "id": result["id"],
                             "title": result.get("url", "Untitled"),
-                            "content": result.get("summary", result.get("content", ""))[:200]
+                            "content": result.get("summary", result.get("content", ""))[:200],
+                            "type": result.get("type", "unknown"),
+                            "snippet": result.get("summary", result.get("content", ""))[:150] + ("..." if len(result.get("summary", result.get("content", ""))) > 150 else "")
                         }
                         for result in filtered_results
                     ]
@@ -427,7 +438,9 @@ def search_page(
                     {
                         "id": result["id"],
                         "title": result.get("url", "Untitled"),
-                        "content": result.get("summary", result.get("content", ""))[:200]
+                        "content": result.get("summary", result.get("content", ""))[:200],
+                        "type": result.get("type", "unknown"),
+                        "snippet": result.get("summary", result.get("content", ""))[:150] + ("..." if len(result.get("summary", result.get("content", ""))) > 150 else "")
                     }
                     for result in filtered_results
                 ]
@@ -456,7 +469,8 @@ def search_page(
         {
             "id": a["id"],
             "title": a["title"],
-            "snippet": a["content"][:60] + "..." if len(a["content"]) > 60 else a["content"]
+            "snippet": a.get("snippet", a["content"][:60] + "..." if len(a["content"]) > 60 else a["content"]),
+            "type": a.get("type", "unknown")
         }
         for a in filtered_articles
     ])
@@ -491,7 +505,8 @@ def search_page(
     return Html(
         Head(
             Title("Search - Knowledge Base"),
-            Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
+            Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
+            Script(src="/static/js/style-toggle.js"),
         ),
         Body(
             layout,
@@ -614,7 +629,8 @@ def process_url_endpoint(
         return Html(
             Head(
                 Title("Processing Complete - Knowledge Base"),
-                Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
+                Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
+                Script(src="/static/js/style-toggle.js"),
             ),
             Body(layout, cls="retro-bg")
         )
@@ -631,7 +647,8 @@ def process_url_endpoint(
         return Html(
             Head(
                 Title("Processing Error - Knowledge Base"),
-                Link(rel="stylesheet", href="/static/styles/retro_terminal.css"),
+                Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
+                Script(src="/static/js/style-toggle.js"),
             ),
             Body(layout, cls="retro-bg")
         )
