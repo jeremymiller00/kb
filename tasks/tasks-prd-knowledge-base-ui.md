@@ -31,7 +31,7 @@
   - [x] 2.3.1 Make the url on each individual article page a link that opens in a new tab.
   - [x] 2.4 Add filtering controls for tags, date, and author using FastHTML form elements.
   - [x] 2.5 Display search results using a styled results list component.
-  - [ ] 2.6 Paginate or lazy-load results for large result sets.
+  - [x] 2.6 Paginate or lazy-load results for large result sets.
   - [ ] 2.7 Write unit tests for search/filter logic and routes.
 
 - [ ] 3.0 Build Article View with Metadata, Content, and Navigation

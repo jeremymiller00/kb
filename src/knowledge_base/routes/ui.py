@@ -18,6 +18,7 @@ from ..ui.components import (
     TerminalSuggestionBox,
     TerminalFilterControls,
     TerminalUrlProcessor,
+    TerminalPaginationControls,
     HomeButton,
 )
 from ..core.content_manager import ContentManager
@@ -272,7 +273,8 @@ def search_page(
     content_type: str = "",
     keywords: str = "",
     date_from: str = "",
-    date_to: str = ""
+    date_to: str = "",
+    page: int = 1
 ):
     search_bar = TerminalSearchBar(placeholder="Search articles...", value=query)
     
@@ -308,11 +310,18 @@ def search_page(
         date_to=date_to
     )
     
+    # Pagination settings
+    page_size = 10
+    page = max(1, page)  # Ensure page is at least 1
+    offset = (page - 1) * page_size
+    total_results = 0
+    total_pages = 0
+    
     # Use ContentManager for search if available
     if content_manager:
         try:
-            # Build search parameters
-            search_kwargs = {"limit": 20}
+            # Build search parameters - get more results to handle pagination and count total
+            search_kwargs = {"limit": 1000}  # Get many results to count total and paginate
             if query:
                 search_kwargs["text_query"] = query
             if keyword_list:
@@ -321,19 +330,26 @@ def search_page(
                 search_kwargs["content_type"] = content_type
             
             # Use ContentManager to search content with filters
-            search_results = content_manager.search_content(**search_kwargs)
+            all_search_results = content_manager.search_content(**search_kwargs)
             
             # Filter by date range if specified (post-filter since ContentManager doesn't support date filtering)
             if timestamp_from or timestamp_to:
                 filtered_results = []
-                for result in search_results:
+                for result in all_search_results:
                     result_timestamp = result.get("timestamp", 0)
                     if timestamp_from and result_timestamp < timestamp_from:
                         continue
                     if timestamp_to and result_timestamp > timestamp_to:
                         continue
                     filtered_results.append(result)
-                search_results = filtered_results
+                all_search_results = filtered_results
+            
+            # Calculate pagination
+            total_results = len(all_search_results)
+            total_pages = (total_results + page_size - 1) // page_size  # Ceiling division
+            
+            # Get results for current page
+            paginated_results = all_search_results[offset:offset + page_size]
             
             filtered_articles = [
                 {
@@ -343,7 +359,7 @@ def search_page(
                     "type": result.get("type", "unknown"),
                     "snippet": result.get("summary", result.get("content", ""))[:150] + ("..." if len(result.get("summary", result.get("content", ""))) > 150 else "")
                 }
-                for result in search_results
+                for result in paginated_results
             ]
         except Exception as e:
             logger.error(f"Error using ContentManager for search: {e}")
@@ -351,16 +367,16 @@ def search_page(
             try:
                 api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
                 search_url = f"{api_base_url}/content/search/"
-                params = {"limit": 20}
+                params = {"limit": 1000}  # Get many results for pagination
                 if query:
                     params["query"] = query
                 response = requests.get(search_url, params=params)
                 
                 if response.status_code == 200:
-                    search_results = response.json()
+                    all_results = response.json()
                     
                     # Apply client-side filtering for API results
-                    filtered_results = search_results
+                    filtered_results = all_results
                     if content_type:
                         filtered_results = [r for r in filtered_results if r.get("type") == content_type]
                     if keyword_list:
@@ -375,6 +391,13 @@ def search_page(
                                (not timestamp_to or r.get("timestamp", 0) <= timestamp_to)
                         ]
                     
+                    # Calculate pagination
+                    total_results = len(filtered_results)
+                    total_pages = (total_results + page_size - 1) // page_size
+                    
+                    # Get results for current page
+                    paginated_results = filtered_results[offset:offset + page_size]
+                    
                     filtered_articles = [
                         {
                             "id": result["id"],
@@ -383,43 +406,53 @@ def search_page(
                             "type": result.get("type", "unknown"),
                             "snippet": result.get("summary", result.get("content", ""))[:150] + ("..." if len(result.get("summary", result.get("content", ""))) > 150 else "")
                         }
-                        for result in filtered_results
+                        for result in paginated_results
                     ]
                 else:
                     filtered_articles = []
+                    total_results = 0
+                    total_pages = 0
             except Exception as api_e:
                 logger.error(f"API fallback also failed: {api_e}")
                 # Final fallback to demo data with filtering
-                filtered_articles = ARTICLES
+                all_articles = ARTICLES
                 if query:
-                    filtered_articles = [
-                        a for a in filtered_articles 
+                    all_articles = [
+                        a for a in all_articles 
                         if query.lower() in a["title"].lower() 
                         or query.lower() in a["content"].lower()
                         or any(query.lower() in tag.lower() for tag in a["tags"])
                     ]
                 if content_type:
-                    filtered_articles = [a for a in filtered_articles if a.get("type") == content_type]
+                    all_articles = [a for a in all_articles if a.get("type") == content_type]
                 if keyword_list:
-                    filtered_articles = [
-                        a for a in filtered_articles 
+                    all_articles = [
+                        a for a in all_articles 
                         if any(keyword.lower() == t.lower() for t in a.get("tags", []) for keyword in keyword_list)
                     ]
+                
+                # Calculate pagination for demo data
+                total_results = len(all_articles)
+                total_pages = (total_results + page_size - 1) // page_size
+                
+                # Get results for current page
+                paginated_articles = all_articles[offset:offset + page_size]
+                filtered_articles = paginated_articles
     else:
         # No ContentManager available, try API directly
         try:
             api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
             search_url = f"{api_base_url}/content/search/"
-            params = {"limit": 20}
+            params = {"limit": 1000}  # Get many results for pagination
             if query:
                 params["query"] = query
             response = requests.get(search_url, params=params)
             
             if response.status_code == 200:
-                search_results = response.json()
+                all_results = response.json()
                 
                 # Apply client-side filtering for API results
-                filtered_results = search_results
+                filtered_results = all_results
                 if content_type:
                     filtered_results = [r for r in filtered_results if r.get("type") == content_type]
                 if keyword_list:
@@ -434,6 +467,13 @@ def search_page(
                            (not timestamp_to or r.get("timestamp", 0) <= timestamp_to)
                     ]
                 
+                # Calculate pagination
+                total_results = len(filtered_results)
+                total_pages = (total_results + page_size - 1) // page_size
+                
+                # Get results for current page
+                paginated_results = filtered_results[offset:offset + page_size]
+                
                 filtered_articles = [
                     {
                         "id": result["id"],
@@ -442,28 +482,38 @@ def search_page(
                         "type": result.get("type", "unknown"),
                         "snippet": result.get("summary", result.get("content", ""))[:150] + ("..." if len(result.get("summary", result.get("content", ""))) > 150 else "")
                     }
-                    for result in filtered_results
+                    for result in paginated_results
                 ]
             else:
                 filtered_articles = []
+                total_results = 0
+                total_pages = 0
         except Exception as e:
             logger.error(f"API search failed: {e}")
             # Fallback to demo data with filtering
-            filtered_articles = ARTICLES
+            all_articles = ARTICLES
             if query:
-                filtered_articles = [
-                    a for a in filtered_articles 
+                all_articles = [
+                    a for a in all_articles 
                     if query.lower() in a["title"].lower() 
                     or query.lower() in a["content"].lower()
                     or any(query.lower() in tag.lower() for tag in a["tags"])
                 ]
             if content_type:
-                filtered_articles = [a for a in filtered_articles if a.get("type") == content_type]
+                all_articles = [a for a in all_articles if a.get("type") == content_type]
             if keyword_list:
-                filtered_articles = [
-                    a for a in filtered_articles 
+                all_articles = [
+                    a for a in all_articles 
                     if any(keyword.lower() == t.lower() for t in a.get("tags", []) for keyword in keyword_list)
                 ]
+            
+            # Calculate pagination for demo data
+            total_results = len(all_articles)
+            total_pages = (total_results + page_size - 1) // page_size
+            
+            # Get results for current page
+            paginated_articles = all_articles[offset:offset + page_size]
+            filtered_articles = paginated_articles
     
     results = TerminalResultsList([
         {
@@ -473,7 +523,27 @@ def search_page(
             "type": a.get("type", "unknown")
         }
         for a in filtered_articles
-    ])
+    ], page=page, total_results=total_results, page_size=page_size)
+    
+    # Create pagination controls
+    query_params = {}
+    if query:
+        query_params['query'] = query
+    if content_type:
+        query_params['content_type'] = content_type
+    if keywords:
+        query_params['keywords'] = keywords
+    if date_from:
+        query_params['date_from'] = date_from
+    if date_to:
+        query_params['date_to'] = date_to
+    
+    pagination_controls = TerminalPaginationControls(
+        current_page=page,
+        total_pages=total_pages,
+        base_url="/search",
+        query_params=query_params
+    ) if total_pages > 1 else None
     
     # Create suggestions based on filters and results
     suggestions = []
@@ -494,12 +564,22 @@ def search_page(
     else:
         suggestions.append("Use filters below to narrow your search or try searching for 'retro' or 'guide'.")
     
-    layout = MainLayout(
-        "SEARCH RESULTS",
+    layout_elements = [
         search_bar,
         filter_controls,
-        results,
-        TerminalSuggestionBox(suggestions),
+        results
+    ]
+    
+    # Add pagination controls if they exist
+    if pagination_controls:
+        layout_elements.append(pagination_controls)
+    
+    # Add suggestions at the end
+    layout_elements.append(TerminalSuggestionBox(suggestions))
+    
+    layout = MainLayout(
+        "SEARCH RESULTS",
+        *layout_elements
     )
     
     return Html(

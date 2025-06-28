@@ -173,7 +173,7 @@ def TerminalFilterControls(
 
 
 # Results list
-def TerminalResultsList(results, on_click=None):
+def TerminalResultsList(results, on_click=None, page=1, total_results=None, page_size=10):
     """Enhanced results list with better styling and metadata display"""
     if not results:
         return Div(
@@ -186,9 +186,17 @@ def TerminalResultsList(results, on_click=None):
             cls='results-list'
         )
     
+    # Calculate result numbering offset for pagination
+    start_num = (page - 1) * page_size + 1
+    
+    # Show total results count if available
+    results_count_text = f"Found {len(results)} result{'s' if len(results) != 1 else ''}"
+    if total_results and total_results > len(results):
+        results_count_text = f"Showing {len(results)} of {total_results} result{'s' if total_results != 1 else ''}"
+    
     return Div(
         Div(
-            H3(f"Found {len(results)} result{'s' if len(results) != 1 else ''}", 
+            H3(results_count_text, 
                style="color: #ffe066; margin-bottom: 1.5em; font-size: 1.2em;"),
             cls="results-header"
         ),
@@ -196,7 +204,7 @@ def TerminalResultsList(results, on_click=None):
             Div(
                 # Result number and title
                 Div(
-                    Span(f"[{i+1:02d}]", cls="result-number"),
+                    Span(f"[{start_num + i:02d}]", cls="result-number"),
                     A(
                         r['title'] if r['title'] else "Untitled",
                         href=f"/article/{r['id']}",
@@ -262,6 +270,113 @@ def TerminalNavControls(back_url=None, next_url=None):
         ) if next_url else None,
         cls='nav-controls',
         style='display:flex;gap:1em;'
+    )
+
+
+# Pagination controls for search results
+def TerminalPaginationControls(
+    current_page=1, 
+    total_pages=1, 
+    base_url="/search", 
+    query_params=None
+):
+    """Pagination controls for navigating between result pages"""
+    if total_pages <= 1:
+        return None  # No pagination needed
+    
+    query_params = query_params or {}
+    
+    def build_url(page_num):
+        """Build URL with query parameters and page number"""
+        params = {**query_params, 'page': page_num}
+        param_string = '&'.join([f"{k}={v}" for k, v in params.items() if v])
+        return f"{base_url}?{param_string}" if param_string else base_url
+    
+    controls = []
+    
+    # Previous page button
+    if current_page > 1:
+        controls.append(
+            A(
+                "◀ Previous",
+                href=build_url(current_page - 1),
+                cls="pagination-btn",
+                style="padding: 0.5em 1em; background: #39ff14; color: #000; text-decoration: none; border-radius: 4px; font-family: monospace; font-weight: bold; margin-right: 0.5em;"
+            )
+        )
+    
+    # Current page indicator and nearby pages
+    start_page = max(1, current_page - 2)
+    end_page = min(total_pages, current_page + 2)
+    
+    # Show first page if not in range
+    if start_page > 1:
+        controls.append(
+            A(
+                "1", 
+                href=build_url(1),
+                cls="pagination-btn",
+                style="padding: 0.5em 0.8em; background: #222; color: #39ff14; text-decoration: none; border: 1px solid #39ff14; border-radius: 4px; font-family: monospace; margin: 0 0.2em;"
+            )
+        )
+        if start_page > 2:
+            controls.append(Span("...", style="color: #39ff14; margin: 0 0.5em;"))
+    
+    # Page number buttons
+    for page_num in range(start_page, end_page + 1):
+        if page_num == current_page:
+            controls.append(
+                Span(
+                    str(page_num),
+                    cls="pagination-current",
+                    style="padding: 0.5em 0.8em; background: #39ff14; color: #000; border-radius: 4px; font-family: monospace; font-weight: bold; margin: 0 0.2em;"
+                )
+            )
+        else:
+            controls.append(
+                A(
+                    str(page_num),
+                    href=build_url(page_num),
+                    cls="pagination-btn",
+                    style="padding: 0.5em 0.8em; background: #222; color: #39ff14; text-decoration: none; border: 1px solid #39ff14; border-radius: 4px; font-family: monospace; margin: 0 0.2em;"
+                )
+            )
+    
+    # Show last page if not in range
+    if end_page < total_pages:
+        if end_page < total_pages - 1:
+            controls.append(Span("...", style="color: #39ff14; margin: 0 0.5em;"))
+        controls.append(
+            A(
+                str(total_pages),
+                href=build_url(total_pages),
+                cls="pagination-btn", 
+                style="padding: 0.5em 0.8em; background: #222; color: #39ff14; text-decoration: none; border: 1px solid #39ff14; border-radius: 4px; font-family: monospace; margin: 0 0.2em;"
+            )
+        )
+    
+    # Next page button
+    if current_page < total_pages:
+        controls.append(
+            A(
+                "Next ▶",
+                href=build_url(current_page + 1),
+                cls="pagination-btn",
+                style="padding: 0.5em 1em; background: #39ff14; color: #000; text-decoration: none; border-radius: 4px; font-family: monospace; font-weight: bold; margin-left: 0.5em;"
+            )
+        )
+    
+    return Div(
+        Div(
+            f"Page {current_page} of {total_pages}",
+            style="color: #ffe066; margin-bottom: 1em; text-align: center; font-family: monospace;"
+        ),
+        Div(
+            *controls,
+            style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.2em;"
+        ),
+        cls="pagination-controls",
+        style="margin: 2em 0; padding: 1em; background: #1a1f1a; border: 1px solid #39ff1444; border-radius: 4px; text-align: center;"
     )
 
 
