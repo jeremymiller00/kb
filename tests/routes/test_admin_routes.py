@@ -132,12 +132,4 @@ def test_get_admin_status():
 # `src.knowledge_base.routes.admin` is correct for testing the route handler's direct calls.
 # If we wanted to test the route handler *and* ensure the `config_manager` functions behave as expected
 # without mocking them, that would be more of an integration test for this specific part.
-# The current approach correctly unit tests the route handlers' logic.Okay, I've created the test files for AI modules and database operations in the previous turns:
-*   `tests/ai/test_config_manager.py`
-*   `tests/ai/test_llm_factory.py`
-*   `tests/ai/test_openai_llm.py`
-*   `tests/storage/test_database.py`
-*   `tests/routes/test_admin_routes.py`
-
-Now, I will proceed to create **`tests/routes/test_content_routes.py`**.
-This file will test the content processing and management API endpoints.
+# The current approach correctly unit tests the route handlers' logic.

@@ -295,13 +295,4 @@ def test_search_content_success(MockDatabase):
 # If `get_db` itself has more complex logic or needs to be mocked, that's also possible.
 # The current tests assume `get_db` is simple enough that patching `Database` class is sufficient.
 # The `mock_content_processing_dependencies` fixture is more complex because `process_url`
-# involves multiple components, some instantiated directly, some via factories.Okay, I have created the following test files in the previous turns:
-*   `tests/ai/test_config_manager.py`
-*   `tests/ai/test_llm_factory.py`
-*   `tests/ai/test_openai_llm.py`
-*   `tests/storage/test_database.py`
-*   `tests/routes/test_admin_routes.py`
-*   `tests/routes/test_content_routes.py`
-
-Now, I will proceed to create **`tests/routes/test_data_routes.py`**.
-This file will test the data viewing API endpoints, mocking the `DataViewer` utility.
+# involves multiple components, some instantiated directly, some via factories.

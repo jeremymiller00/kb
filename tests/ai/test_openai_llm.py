@@ -1,4 +1,5 @@
 import pytest
+import logging
 from unittest.mock import patch, MagicMock, ANY
 from openai import BadRequestError # Import specific exception for testing
 
@@ -8,7 +9,7 @@ from src.knowledge_base.utils.logger import configure_logging # Assuming logger 
 
 # Configure a logger for tests if OpenAILLM expects one
 # This can also be a mock logger if preferred.
-test_logger = configure_logging(log_level="DEBUG", print_to_console=False)
+test_logger = configure_logging(level=logging.DEBUG, print_to_console=False)
 
 
 @pytest.fixture
@@ -298,7 +299,4 @@ def test_gen_gpt_chat_completion_retries_on_rate_limit_error(mock_sleep, openai_
 # - Different summary_types for generate_summary and their corresponding prompts.
 # - Edge cases for input text (e.g., empty strings, very long strings for keyword extraction).
 # - Different model_name passed to __init__.
-# - If logger is used more extensively, verify log messages.Okay, I've created `tests/ai/test_config_manager.py`, `tests/ai/test_llm_factory.py`, and `tests/ai/test_openai_llm.py` in the previous turns.
-
-The testing plan is extensive. I will now proceed to create **`tests/storage/test_database.py`**.
-This file will test the `Database` class from `src/knowledge_base/storage/database.py`, mocking the database connection and cursor operations.
+# - If logger is used more extensively, verify log messages.

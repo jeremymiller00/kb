@@ -86,7 +86,7 @@ class TestIndexRoute:
             
             # Check that result is a valid HTML response
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Verify ContentManager was called
             mock_content_manager.get_recent_content.assert_called_once_with(limit=5)
@@ -101,10 +101,10 @@ class TestIndexRoute:
                 
                 # Check that result is Html object
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
-                
-                # Verify API was called as fallback
-                mock_requests.get.assert_called()
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            
+            # Verify API was called as fallback
+            mock_requests.get.assert_called()
     
     def test_index_without_content_manager(self, mock_requests):
         """Test index route when ContentManager is not available"""
@@ -114,10 +114,10 @@ class TestIndexRoute:
                 
                 # Check that result is Html object
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
                 
-                # Verify API was called
-                mock_requests.get.assert_called()
+            # Verify API was called
+            mock_requests.get.assert_called()
     
     def test_index_fallback_to_demo_data(self):
         """Test index route falls back to demo data when everything fails"""
@@ -129,7 +129,7 @@ class TestIndexRoute:
                 
                 # Check that result is Html object
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
 
 
 class TestArticleViewRoute:
@@ -154,7 +154,7 @@ class TestArticleViewRoute:
             
             # Check that result is a valid HTML response
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Verify database search was called
             mock_content_manager.db.search_content.assert_called_once_with({}, limit=1000)
@@ -176,10 +176,10 @@ class TestArticleViewRoute:
                 
                 # Check that result is Html object
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
                 
                 # Verify API was called
-                mock_requests.get.assert_called_with('http://localhost:8000/content/1')
+            mock_requests.get.assert_called_with('http://localhost:8000/content/1')
     
     def test_article_view_not_found(self):
         """Test article view when article is not found"""
@@ -193,7 +193,7 @@ class TestArticleViewRoute:
                 
                 # Check that result is Html object with error
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
 
 
 class TestSearchRoute:
@@ -206,7 +206,7 @@ class TestSearchRoute:
             
             # Check that result is a valid HTML response
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Verify search was called with empty parameters
             mock_content_manager.search_content.assert_called_once()
@@ -218,7 +218,7 @@ class TestSearchRoute:
             
             # Check that result is a valid HTML response
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Verify search was called with text query
             mock_content_manager.search_content.assert_called_once()
@@ -239,7 +239,7 @@ class TestSearchRoute:
             
             # Check that result is a valid HTML response
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Verify search was called with filters
             mock_content_manager.search_content.assert_called_once()
@@ -269,7 +269,7 @@ class TestSearchRoute:
             
             # Check that result is a valid HTML response
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Verify search was called
             mock_content_manager.search_content.assert_called_once()
@@ -282,10 +282,10 @@ class TestSearchRoute:
                 
                 # Check that result is Html object
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
                 
-                # Verify API was called
-                mock_requests.get.assert_called()
+            # Verify API was called
+            mock_requests.get.assert_called()
     
     def test_search_page_date_filter_validation(self, mock_content_manager):
         """Test search page with invalid date formats"""
@@ -298,7 +298,7 @@ class TestSearchRoute:
             
             # Should still return Html object despite invalid dates
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Search should still be called
             mock_content_manager.search_content.assert_called_once()
@@ -313,10 +313,10 @@ class TestSearchRoute:
                 
                 # Check that result is Html object
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
                 
                 # Verify API fallback was used
-                mock_requests.get.assert_called()
+            mock_requests.get.assert_called()
 
 
 class TestProcessUrlEndpoint:
@@ -353,12 +353,12 @@ class TestProcessUrlEndpoint:
                 
                 # Check that result is Html object
                 assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
                 
-                # Verify content manager methods were called
-                mock_content_manager.clean_url.assert_called_once_with("https://example.com")
-                mock_content_manager.get_file_path.assert_called_once()
-                mock_content_manager.save_content.assert_called_once()
+            # Verify content manager methods were called
+            mock_content_manager.clean_url.assert_called_once_with("https://example.com")
+            mock_content_manager.get_file_path.assert_called_once()
+            mock_content_manager.save_content.assert_called_once()
     
     def test_process_url_no_content_manager(self):
         """Test URL processing when ContentManager is not available"""
@@ -367,7 +367,7 @@ class TestProcessUrlEndpoint:
             
             # Should return error page
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
     
     @patch('knowledge_base.routes.ui.LLMFactory')
     @patch('knowledge_base.routes.ui.ExtractorFactory')
@@ -394,7 +394,7 @@ class TestProcessUrlEndpoint:
             
             # Check that result is a valid HTML response
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
             
             # Verify save_content was NOT called in debug mode
             mock_content_manager.save_content.assert_not_called()
@@ -408,7 +408,7 @@ class TestProcessUrlEndpoint:
             
             # Should return error page
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple
 
 
 class TestSearchFilterLogic:
@@ -450,4 +450,4 @@ class TestSearchFilterLogic:
             
             # Should return HTML with filtered results
             assert result is not None
-                assert isinstance(result, tuple)  # FastHTML Html returns tuple
+            assert isinstance(result, tuple)  # FastHTML Html returns tuple

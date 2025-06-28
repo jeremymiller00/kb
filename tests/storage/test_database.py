@@ -1,11 +1,12 @@
 import pytest
+import logging
 from unittest.mock import patch, MagicMock, call # import call for checking multiple calls
 import psycopg2 # For raising psycopg2 errors
 
 from src.knowledge_base.storage.database import Database
 from src.knowledge_base.utils.logger import configure_logging
 
-test_logger = configure_logging(log_level="DEBUG", print_to_console=False)
+test_logger = configure_logging(level=logging.DEBUG, print_to_console=False)
 
 # Sample data for testing
 SAMPLE_CONTENT_DICT = {
