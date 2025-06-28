@@ -24,7 +24,7 @@
   - [x] 1.4 Ensure keyboard navigation and sufficient contrast for accessibility.
   - [x] 1.5 Write unit tests for UI components.
 
-- [ ] 2.0 Implement Article Search and Filtering Functionality
+- [x] 2.0 Implement Article Search and Filtering Functionality
   - [x] 2.1 Add a FastHTML route and handler for the search page in `ui.py`.
   - [x] 2.2 Implement a search form using FastHTML's `Form`, `Input`, and `Button` components.
   - [x] 2.3 Connect the search form to backend logic in `content_manager.py` for full-text and keyword search.
@@ -32,7 +32,7 @@
   - [x] 2.4 Add filtering controls for tags, date, and author using FastHTML form elements.
   - [x] 2.5 Display search results using a styled results list component.
   - [x] 2.6 Paginate or lazy-load results for large result sets.
-  - [ ] 2.7 Write unit tests for search/filter logic and routes.
+  - [x] 2.7 Write unit tests for search/filter logic and routes.
 
 - [ ] 3.0 Build Article View with Metadata, Content, and Navigation
   - [ ] 3.1 Create an article view component using FastHTML (`Article`, `ArticleTitle`, `ArticleMeta`).
