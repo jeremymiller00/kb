@@ -1,13 +1,13 @@
 from setuptools import setup
 
 setup(
-    name='knowledge base loader',
+    name='knowledge base',
     version='0.0.1',    
-    description='A simplekb loader',
+    description='A simplekb',
     url='https://github.com/...',
     author='Jeremy Miller',
     author_email='jeremymiller00@gmail.com',
-    packages=["kbloader"],
+    packages=["knowledge_base"],
     install_requires=[],
 
     classifiers=[
