@@ -416,7 +416,7 @@ def TerminalUrlProcessor(placeholder='Enter URL to process...', **kwargs):
                     style='margin-bottom:1em;display:flex;align-items:center;gap:0.5em;'
                 ),
                 Label(
-                    Input(type='checkbox', name='jina', value='true'),
+                    Input(type='checkbox', name='jina', value='true', checked=True),
                     ' Use Jina for processing (recommended for PDFs)',
                     style='margin-bottom:1em;display:flex;align-items:center;gap:0.5em;'
                 ),
