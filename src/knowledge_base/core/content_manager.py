@@ -28,7 +28,7 @@ import sys
 import time
 import json
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from typing import Dict, List, Any, Optional
 from ..storage.database import Database
 
@@ -314,8 +314,29 @@ class ContentManager():
 
     def clean_url(self, url: str) -> str:
         if url.startswith('!wget'):
-            return url.split(' ', 1)[1].strip()
-        return url.split(' ', 1)[0].strip()
+            url = url.split(' ', 1)[1].strip()
+        else:
+            url = url.split(' ', 1)[0].strip()
+        
+        # Strip UTM parameters and other tracking parameters
+        parsed = urlparse(url)
+        if parsed.query:
+            # Remove tracking parameters
+            tracking_params = {
+                'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+                'fbclid', 'gclid', 'msclkid', 'twclid', 'igshid', 'ref', 'referrer'
+            }
+            
+            query_params = parse_qs(parsed.query, keep_blank_values=True)
+            cleaned_params = {k: v for k, v in query_params.items() 
+                            if k.lower() not in tracking_params}
+            
+            # Reconstruct URL without tracking parameters
+            cleaned_query = urlencode(cleaned_params, doseq=True) if cleaned_params else ''
+            url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, 
+                            parsed.params, cleaned_query, parsed.fragment))
+        
+        return url
 
     def jinafy_url(self, url: str) -> str:
         """Use Jina to process URL if cannot process; useful for pdfs"""
