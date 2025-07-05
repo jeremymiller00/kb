@@ -1,4 +1,6 @@
 # Knowledge Base
+Branch: fix-youtube-2
+Second try: rather than copy the module directly, upgrade the dependancy
 
 ## Features
 - Supports summarization of web content from URLs, ArXiv papers, and GitHub repositories
