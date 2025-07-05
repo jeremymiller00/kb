@@ -58,7 +58,7 @@ class YouTubeExtractor(ContentExtractor):
             transcript_data = transcript.fetch()
 
             # Formatting the transcript text
-            formatted_transcript = ', '.join([item['text'] for item in transcript_data])
+            formatted_transcript = ', '.join([item.text for item in transcript_data])
             return formatted_transcript
 
         except NoTranscriptFound:
