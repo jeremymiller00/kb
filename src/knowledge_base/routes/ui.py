@@ -600,6 +600,156 @@ def ui_index():
     return index()
 
 
+@rt('/process-text', methods=['POST'])
+def process_text_endpoint(
+    content: str,
+    title: Optional[str] = None,
+    url: Optional[str] = None,
+    debug: Optional[str] = None
+):
+    """Process direct text content endpoint"""
+    try:
+        # Convert form values to booleans
+        debug_mode = debug == 'true'
+        
+        # Initialize components
+        if not content_manager:
+            return Html(
+                Head(Title("Error")),
+                Body(MainLayout("ERROR", Div("ContentManager not initialized. Check database connection.")))
+            )
+        
+        # Generate a unique identifier for this text content
+        import hashlib
+        content_hash = hashlib.md5(content.encode()).hexdigest()[:8]
+        
+        # Use provided URL or create a synthetic one
+        if url and url.strip():
+            stored_url = url.strip()
+        else:
+            # Create a synthetic URL for the text content
+            stored_url = f"text://direct-input/{content_hash}"
+            if title:
+                stored_url = f"text://direct-input/{title.replace(' ', '-')}-{content_hash}"
+        
+        # Get current timestamp
+        import time
+        time_now = int(time.time())
+        
+        # Generate file path for saving using ContentManager's proper method
+        file_type, file_path, time_now, complete_url = content_manager.get_file_path(stored_url)
+        
+        logger.info(f"Processing direct text content: {len(content)} characters, Debug: {debug_mode}")
+        
+        # Process with LLM (skip extraction since we have the content directly)
+        llm = LLMFactory().create_llm('openai')
+        llm.set_logger(logger)
+        summary = llm.generate_summary(content, summary_type=file_type)
+        keywords = llm.extract_keywords_from_summary(summary)
+        embedding = llm.generate_embedding(content)
+        obsidian_markdown = llm.summary_to_obsidian_markdown(summary, keywords)
+        
+        # If user provided a title, prepend it as H1 header to obsidian_markdown
+        # This ensures the create_obsidian_note method uses the user's title
+        if title and title.strip():
+            obsidian_markdown = f"# {title.strip()}\n\n{obsidian_markdown}"
+        
+        # Save content if not in debug mode
+        if not debug_mode:
+            # Save to disk
+            content_manager.save_content(
+                file_type=file_type,
+                file_path=file_path,
+                content=content,
+                summary=summary,
+                keywords=keywords,
+                embeddings=embedding,
+                url=stored_url,
+                timestamp=time_now,
+                obsidian_markdown=obsidian_markdown
+            )
+            
+            # Save to database
+            try:
+                conn_string = os.getenv('DB_CONN_STRING')
+                if conn_string:
+                    db = Database(logger=logger, connection_string=conn_string)
+                    db_record_data = {
+                        'url': stored_url,
+                        'type': file_type,
+                        'timestamp': time_now,
+                        'content': content,
+                        'summary': summary,
+                        'embeddings': embedding if isinstance(embedding, list) else [],
+                        'obsidian_markdown': obsidian_markdown,
+                        'keywords': keywords if isinstance(keywords, list) else []
+                    }
+                    record_id = db.store_content(db_record_data)
+                    db.close()
+                    logger.info(f"Record {record_id} saved to database")
+            except Exception as db_e:
+                logger.error(f"Database save failed: {db_e}")
+            
+            # Create Obsidian note
+            try:
+                obsidian_path = os.getenv('DSV_KB_PATH')
+                if obsidian_path:
+                    content_manager.create_obsidian_note(file_path, f"{obsidian_path}/_new-notes/")
+                    logger.info(f"Obsidian note created for {file_path}")
+            except Exception as obsidian_e:
+                logger.error(f"Obsidian note creation failed: {obsidian_e}")
+        
+        # Create success page
+        display_title = title if title else f"Text Content ({content_hash})"
+        success_content = Div(
+            H3("✅ Text Content Processed Successfully!"),
+            P(f"Title: {display_title}"),
+            P(f"URL: {stored_url}"),
+            P(f"Content length: {len(content)} characters"),
+            P(f"Debug mode: {'Yes' if debug_mode else 'No'}"),
+            Div(
+                H3("Summary:"),
+                P(summary[:500] + "..." if len(summary) > 500 else summary),
+                style="background:#222a22;padding:1em;border:1px solid #39ff1444;border-radius:4px;margin:1em 0;"
+            ),
+            Div(
+                H3("Keywords:"),
+                P(", ".join(keywords[:10]) if keywords else "None"),
+                style="background:#222a22;padding:1em;border:1px solid #39ff1444;border-radius:4px;margin:1em 0;"
+            ),
+            A("🏠 Back to Home", href="/", cls="home-button", style="display:inline-block;padding:0.5em 1em;background:#39ff14;color:#000;text-decoration:none;border-radius:4px;font-weight:bold;margin-top:1em;font-family:monospace;")
+        )
+        
+        layout = MainLayout("PROCESSING COMPLETE", success_content)
+        return Html(
+            Head(
+                Title("Processing Complete - Knowledge Base"),
+                Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
+                Script(src="/static/js/style-toggle.js"),
+            ),
+            Body(layout, cls="retro-bg")
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing text content: {str(e)}")
+        error_content = Div(
+            H3("❌ Processing Failed"),
+            P(f"Error: {str(e)}"),
+            P(f"URL: {url if url else 'None provided'}"),
+            P(f"Content length: {len(content)} characters"),
+            A("🏠 Back to Home", href="/", cls="home-button", style="display:inline-block;padding:0.5em 1em;background:#39ff14;color:#000;text-decoration:none;border-radius:4px;font-weight:bold;margin-top:1em;font-family:monospace;")
+        )
+        layout = MainLayout("PROCESSING ERROR", error_content)
+        return Html(
+            Head(
+                Title("Processing Error - Knowledge Base"),
+                Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
+                Script(src="/static/js/style-toggle.js"),
+            ),
+            Body(layout, cls="retro-bg")
+        )
+
+
 @rt('/process', methods=['POST'])
 def process_url_endpoint(
     url: str,

@@ -1,7 +1,7 @@
 # FastHTML UI components for 80s retro terminal look
 # src/knowledge_base/ui/components.py
 
-from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span, Select, Option, Label
+from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span, Select, Option, Label, Textarea, Script
 
 # Main layout wrapper
 def MainLayout(title, *content, show_home_button=True, **kwargs):
@@ -395,10 +395,38 @@ def TerminalSuggestionBox(suggestions):
 
 # URL Processing form component
 def TerminalUrlProcessor(placeholder='Enter URL to process...', **kwargs):
-    """URL processing form for the home page"""
+    """URL processing form for the home page with options for URL or direct text"""
     return Div(
-        H3('Process URL'),
-        P('Paste a URL below to extract content, generate summary, and save to your knowledge base.'),
+        H3('Process Content'),
+        P('Choose how you want to process content: enter a URL to extract content from the web, or paste text directly.'),
+        
+        # Processing mode selector
+        Div(
+            Label(
+                Input(
+                    type='radio',
+                    name='processing_mode',
+                    value='url',
+                    checked=True,
+                    onchange='toggleProcessingMode()'
+                ),
+                ' Process URL',
+                style='margin-right:2em;display:flex;align-items:center;gap:0.5em;'
+            ),
+            Label(
+                Input(
+                    type='radio',
+                    name='processing_mode',
+                    value='text',
+                    onchange='toggleProcessingMode()'
+                ),
+                ' Process Direct Text',
+                style='display:flex;align-items:center;gap:0.5em;'
+            ),
+            style='margin-bottom:1em;display:flex;align-items:center;'
+        ),
+        
+        # URL processing form
         Form(
             Input(
                 type='url',
@@ -430,8 +458,71 @@ def TerminalUrlProcessor(placeholder='Enter URL to process...', **kwargs):
             ),
             action='/process',
             method='post',
-            style='background:#222a22;padding:1.5em;border:1px solid #39ff1444;border-radius:4px;'
+            style='background:#222a22;padding:1.5em;border:1px solid #39ff1444;border-radius:4px;',
+            id='url-form'
         ),
+        
+        # Direct text processing form
+        Form(
+            Input(
+                type='text',
+                name='title',
+                placeholder='Enter title for this content (optional)',
+                style='flex:1;margin-bottom:1em;'
+            ),
+            Input(
+                type='url',
+                name='url',
+                placeholder='Enter source URL for this content (optional)',
+                style='flex:1;margin-bottom:1em;'
+            ),
+            Div(
+                Label('Content Text:', style='display:block;margin-bottom:0.5em;font-weight:bold;'),
+                Textarea(
+                    name='content',
+                    placeholder='Paste your text content here...',
+                    required=True,
+                    style='width:100%;height:150px;resize:vertical;font-family:monospace;'
+                ),
+                style='margin-bottom:1em;'
+            ),
+            Div(
+                Label(
+                    Input(type='checkbox', name='debug', value='true'),
+                    ' Debug mode (don\'t save to disk)',
+                    style='margin-bottom:1em;display:flex;align-items:center;gap:0.5em;'
+                ),
+                style='margin-bottom:1em;'
+            ),
+            Button(
+                'Process Text',
+                type='submit',
+                cls='button-primary',
+                style='width:100%;'
+            ),
+            action='/process-text',
+            method='post',
+            style='background:#222a22;padding:1.5em;border:1px solid #39ff1444;border-radius:4px;display:none;',
+            id='text-form'
+        ),
+        
+        # JavaScript to toggle between forms
+        Script("""
+        function toggleProcessingMode() {
+            const urlMode = document.querySelector('input[name="processing_mode"][value="url"]').checked;
+            const urlForm = document.getElementById('url-form');
+            const textForm = document.getElementById('text-form');
+            
+            if (urlMode) {
+                urlForm.style.display = 'block';
+                textForm.style.display = 'none';
+            } else {
+                urlForm.style.display = 'none';
+                textForm.style.display = 'block';
+            }
+        }
+        """, type='text/javascript'),
+        
         cls='url-processor',
         style='margin-bottom:2em;'
     )
