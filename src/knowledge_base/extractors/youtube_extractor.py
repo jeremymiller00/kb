@@ -1,4 +1,5 @@
 import re
+import xml.etree.ElementTree as ET
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound
 from .base import ContentExtractor
 
@@ -62,6 +63,10 @@ class YouTubeExtractor(ContentExtractor):
 
         except NoTranscriptFound:
             return "No transcript found for this video."
+        except ET.ParseError as e:
+            return f"Error parsing video data: {str(e)}. The video might be private, restricted, or temporarily unavailable."
+        except Exception as e:
+            return f"Error processing video: {str(e)}. Please check if the video is accessible and try again."
         
     def extract_video_id(self, url):
         """
