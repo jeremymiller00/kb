@@ -338,9 +338,14 @@ class ContentManager():
         
         return url
 
-    def jinafy_url(self, url: str) -> str:
-        """Use Jina to process URL if cannot process; useful for pdfs"""
-        return f"https://r.jina.ai/{url}"
+    def jinafy_url(self, url: str) -> tuple[str, str]:
+        """Use Jina to process URL if cannot process; useful for pdfs
+        
+        Returns:
+            tuple: (original_url, jina_processed_url)
+        """
+        jina_url = f"https://r.jina.ai/{url}"
+        return (url, jina_url)
 
     def search_content(
         self, 

@@ -621,8 +621,9 @@ def process_url_endpoint(
         
         # Clean and prepare URL
         clean_url = content_manager.clean_url(url)
+        original_url = clean_url
         if use_jina or clean_url.endswith('.pdf'):
-            clean_url = content_manager.jinafy_url(clean_url)
+            original_url, clean_url = content_manager.jinafy_url(clean_url)
         
         file_type, file_path, time_now, complete_url = content_manager.get_file_path(clean_url)
         logger.info(f"Processing URL: {complete_url}, File type: {file_type}, Debug: {debug_mode}")
@@ -651,7 +652,7 @@ def process_url_endpoint(
                 summary=summary,
                 keywords=keywords,
                 embeddings=embedding,
-                url=complete_url,
+                url=original_url,
                 timestamp=time_now,
                 obsidian_markdown=obsidian_markdown
             )

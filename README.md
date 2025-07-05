@@ -187,6 +187,8 @@ This ensures more readable and consistent note titles in your Obsidian vault.
 
 
 ## To Do
+* Clean Jina from urls in stored records
+* Manually update a record via UI
 * UI
    * View article content
    * basic db stats

@@ -330,9 +330,10 @@ def test_get_recent_content_database_error(content_manager_with_db, mock_databas
 def test_jinafy_url(content_manager):
     """Test jinafy_url method"""
     url = "https://example.com/document.pdf"
-    result = content_manager.jinafy_url(url)
+    original_url, jina_url = content_manager.jinafy_url(url)
     
-    assert result == "https://r.jina.ai/https://example.com/document.pdf"
+    assert original_url == "https://example.com/document.pdf"
+    assert jina_url == "https://r.jina.ai/https://example.com/document.pdf"
 
 
 def test_clean_url_with_wget(content_manager):

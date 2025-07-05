@@ -58,8 +58,9 @@ def process_url(
         content_manager = ContentManager(logger=logger)
         url = content_manager.clean_url(url)
         # use Jina for PDFs or optionally
+        original_url = url
         if options.jina or url.endswith('.pdf'):
-            url = content_manager.jinafy_url(url)
+            original_url, url = content_manager.jinafy_url(url)
             file_type, file_path, time_now, complete_url = content_manager.get_file_path(url, force_general=True)
         else:
             file_type, file_path, time_now, complete_url = content_manager.get_file_path(url)
@@ -86,7 +87,7 @@ def process_url(
                 summary=summary,
                 keywords=keywords,
                 embeddings=embedding,
-                url=complete_url,
+                url=original_url,
                 timestamp=time_now,
                 obsidian_markdown=obsidian_markdown
             )
