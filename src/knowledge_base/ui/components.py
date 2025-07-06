@@ -173,7 +173,7 @@ def TerminalFilterControls(
 
 
 # Results list
-def TerminalResultsList(results, on_click=None, page=1, total_results=None, page_size=10):
+def TerminalResultsList(results, on_click=None, page=1, total_results=None, page_size=10, search_params=None):
     """Enhanced results list with better styling and metadata display"""
     if not results:
         return Div(
@@ -194,6 +194,20 @@ def TerminalResultsList(results, on_click=None, page=1, total_results=None, page
     if total_results and total_results > len(results):
         results_count_text = f"Showing {len(results)} of {total_results} result{'s' if total_results != 1 else ''}"
     
+    # Build back URL from search parameters
+    def build_back_url(search_params):
+        if not search_params:
+            return "/search"
+        
+        params = []
+        for key, value in search_params.items():
+            if value and value != "" and value != "__all__":
+                params.append(f"{key}={value}")
+        
+        return f"/search?{'&'.join(params)}" if params else "/search"
+    
+    back_url = build_back_url(search_params)
+    
     return Div(
         Div(
             H3(results_count_text, 
@@ -207,7 +221,7 @@ def TerminalResultsList(results, on_click=None, page=1, total_results=None, page
                     Span(f"[{start_num + i:02d}]", cls="result-number"),
                     A(
                         r['title'] if r['title'] else "Untitled",
-                        href=f"/article/{r['id']}",
+                        href=f"/article/{r['id']}?back_url={back_url.replace('&', '%26').replace('?', '%3F')}",
                         cls='result-title',
                         onclick=on_click
                     ),
@@ -242,18 +256,140 @@ def TerminalResultsList(results, on_click=None, page=1, total_results=None, page
     )
 
 
-# Article view (metadata + content)
+# Article view (metadata + content) using FastHTML's Article, ArticleTitle, ArticleMeta
 def TerminalArticleView(title, meta, content, back_url=None):
-    return Article(
-        ArticleTitle(title),
-        ArticleMeta(meta),
-        Div(content, style='margin-top:1.5em;'),
-        TerminalButton(
-            'Back',
-            onclick=f"window.location='{back_url or '/'}'",
-            primary=False
-        ) if back_url else None,
-        cls='article-view'
+    """
+    Enhanced article view component using FastHTML's native Article, ArticleTitle, and ArticleMeta components
+    with terminal styling and improved accessibility.
+    """
+    from fasthtml.common import Article as FastArticle, H1 as ArticleTitle, Div as ArticleMeta, H2
+    
+    # Create article title - make it clickable if it's a URL
+    if title and (title.startswith('http://') or title.startswith('https://')):
+        title_element = ArticleTitle(
+            A(title, href=title, target='_blank', cls='article-title-link',
+              style="color: #39ff14; text-decoration: none; word-break: break-all;"),
+            cls='article-title',
+            style="color: #ffe066; border-bottom: 2px solid #39ff14; padding-bottom: 0.5em; margin-bottom: 1em; font-size: 1.8em; font-weight: bold;"
+        )
+    else:
+        title_element = ArticleTitle(
+            title or "Untitled Article",
+            cls='article-title',
+            style="color: #ffe066; border-bottom: 2px solid #39ff14; padding-bottom: 0.5em; margin-bottom: 1em; font-size: 1.8em; font-weight: bold;"
+        )
+    
+    # Create enhanced metadata display with better structure
+    meta_element = None
+    if isinstance(meta, dict) and any(meta.get(key) for key in ['id', 'author', 'date', 'tags', 'source_url']):
+        meta_rows = []
+        
+        # ID row
+        if meta.get('id'):
+            meta_rows.append(
+                Div(
+                    Span("ID:", cls="meta-label", style="color: #39ff14; font-weight: bold; margin-right: 0.5em;"),
+                    Span(str(meta['id']), cls="meta-value", style="color: #cccccc; font-family: monospace;"),
+                    cls="meta-row",
+                    style="margin-bottom: 0.5em;"
+                )
+            )
+        
+        # Author row
+        if meta.get('author'):
+            meta_rows.append(
+                Div(
+                    Span("Author:", cls="meta-label", style="color: #39ff14; font-weight: bold; margin-right: 0.5em;"),
+                    Span(meta['author'], cls="meta-value", style="color: #cccccc;"),
+                    cls="meta-row",
+                    style="margin-bottom: 0.5em;"
+                )
+            )
+        
+        # Date row
+        if meta.get('date'):
+            meta_rows.append(
+                Div(
+                    Span("Published:", cls="meta-label", style="color: #39ff14; font-weight: bold; margin-right: 0.5em;"),
+                    Span(meta['date'], cls="meta-value", style="color: #cccccc;"),
+                    cls="meta-row",
+                    style="margin-bottom: 0.5em;"
+                )
+            )
+        
+        # Source URL row (if different from title)
+        if meta.get('source_url') and meta['source_url'] != title:
+            meta_rows.append(
+                Div(
+                    Span("Source:", cls="meta-label", style="color: #39ff14; font-weight: bold; margin-right: 0.5em;"),
+                    A(
+                        meta['source_url'] if len(meta['source_url']) <= 60 else meta['source_url'][:57] + "...",
+                        href=meta['source_url'],
+                        target='_blank',
+                        cls="meta-value",
+                        style="color: #39ff14; text-decoration: underline; word-break: break-all;"
+                    ),
+                    cls="meta-row",
+                    style="margin-bottom: 0.5em;"
+                )
+            )
+        
+        # Tags row
+        if meta.get('tags') and isinstance(meta['tags'], list) and meta['tags']:
+            tag_elements = []
+            for tag in meta['tags']:
+                tag_elements.append(
+                    Span(
+                        tag,
+                        cls="tag-item",
+                        style="background: #39ff1422; color: #39ff14; padding: 0.2em 0.5em; border-radius: 3px; font-size: 0.85em; margin-right: 0.5em; border: 1px solid #39ff1466;"
+                    )
+                )
+            
+            meta_rows.append(
+                Div(
+                    Span("Tags:", cls="meta-label", style="color: #39ff14; font-weight: bold; margin-right: 0.5em; align-self: flex-start;"),
+                    Div(*tag_elements, style="display: flex; flex-wrap: wrap; gap: 0.3em;"),
+                    cls="meta-row",
+                    style="margin-bottom: 0.5em; display: flex; align-items: flex-start;"
+                )
+            )
+        
+        # Create metadata container
+        meta_element = ArticleMeta(
+            *meta_rows,
+            cls='article-meta',
+            style="background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; padding: 1em; margin-bottom: 2em; font-size: 0.9em;"
+        )
+    
+    # Create content section with improved formatting
+    content_element = Div(
+        H2("Content", style="color: #ffe066; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em; margin-bottom: 1em; font-size: 1.2em;"),
+        Div(
+            content,
+            cls='article-content-body',
+            style="color: #cccccc; line-height: 1.6; white-space: pre-wrap; max-width: 100%; overflow-wrap: break-word;"
+        ),
+        cls='article-content',
+        style="margin-bottom: 2em;"
+    )
+    
+    # Create back button
+    back_button = TerminalButton(
+        '← Back',
+        onclick=f"window.location='{back_url or '/'}'",
+        primary=False,
+        style="margin-top: 1em; background: #666; color: #fff; padding: 0.5em 1em; border-radius: 4px;"
+    ) if back_url else None
+    
+    # Use FastHTML's Article component
+    return FastArticle(
+        title_element,
+        meta_element,
+        content_element,
+        back_button,
+        cls='terminal-article-view',
+        style="background: #1a1f1a; border: 1px solid #39ff1444; border-radius: 4px; padding: 2em; margin: 1em 0;"
     )
 
 

@@ -187,7 +187,7 @@ def index():
 
 
 @rt('/article/{article_id:int}')
-def article_view(article_id: int):
+def article_view(article_id: int, back_url: str = "/"):
     # Try to fetch article using ContentManager first
     article = None
     if content_manager:
@@ -242,12 +242,14 @@ def article_view(article_id: int):
     article_content = TerminalArticleView(
         title=article["title"],
         meta={
+            "id": article["id"],
             "author": article["author"],
             "date": article["date"],
-            "tags": article["tags"]
+            "tags": article["tags"],
+            "source_url": article.get("source_url", article["title"]) if article["title"].startswith('http') else None
         },
         content=article["content"],
-        back_url="/"
+        back_url=back_url
     )
     layout = MainLayout(
         "ARTICLE VIEW",
@@ -515,6 +517,16 @@ def search_page(
             paginated_articles = all_articles[offset:offset + page_size]
             filtered_articles = paginated_articles
     
+    # Build search parameters for back navigation
+    search_params = {
+        'query': query,
+        'content_type': content_type,
+        'keywords': keywords,
+        'date_from': date_from,
+        'date_to': date_to,
+        'page': page
+    }
+    
     results = TerminalResultsList([
         {
             "id": a["id"],
@@ -523,7 +535,7 @@ def search_page(
             "type": a.get("type", "unknown")
         }
         for a in filtered_articles
-    ], page=page, total_results=total_results, page_size=page_size)
+    ], page=page, total_results=total_results, page_size=page_size, search_params=search_params)
     
     # Create pagination controls
     query_params = {}
