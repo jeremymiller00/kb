@@ -187,7 +187,9 @@ This ensures more readable and consistent note titles in your Obsidian vault.
 
 
 ## To Do
-* Add clean DB process eventually
+* DB Maintenance module
+   * Update, delete
+   * Rebuild
 * Manually update a record via UI
 * UI
    * View article content
