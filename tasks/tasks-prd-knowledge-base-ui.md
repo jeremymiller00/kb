@@ -48,7 +48,7 @@
   - [ ] 4.4 Highlight or style links for easy navigation (using retro terminal theme).
   - [x] 4.5 Write unit tests for link navigation and related article logic.
   - [x] 4.6 Create cosine sim route in the fast api app
-  - [ ] 4.7 Improve related articles by adding cosine similarity algorithm. Use existing keyword similarity algorithm and cosine similarity from document embeddings. Allow the user to toggle between them and set a default.
+  - [ ] 4.7 Use existing keyword similarity algorithm and cosine similarity from document embeddings via fastapi for finding related articles. Allow the user to toggle between them and set a preference. The default should be cosine similarity 
 
 - [ ] 5.0 Add AI-Driven Suggestions for New Ideas or Questions
   - [ ] 5.1 Implement a suggestion engine in `suggestion_engine.py`. 
