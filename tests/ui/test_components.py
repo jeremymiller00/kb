@@ -71,12 +71,15 @@ def test_terminal_results_list_renders(results):
 # Test TerminalArticleView
 def test_terminal_article_view_renders():
     meta = {"author": "John Doe", "date": "2024-01-01", "tags": ["ai", "tech"]}
-    html = components.TerminalArticleView("Test Title", meta, "Test Content")
-    assert "article-view" in str(html)
+    summary = "This is a test summary"
+    content = "This is the full test content"
+    html = components.TerminalArticleView("Test Title", meta, summary, content)
+    assert "terminal-article-view" in str(html)
     assert "Test Title" in str(html)
     assert "John Doe" in str(html)
     assert "2024-01-01" in str(html)
-    assert "Test Content" in str(html)
+    assert "This is a test summary" in str(html)
+    assert "This is the full test content" in str(html)
 
 
 # Test TerminalNavControls
@@ -363,3 +366,344 @@ class TestSearchFormIntegration:
         assert 'name="keywords"' in filter_str
         assert 'name="date_from"' in filter_str
         assert 'name="date_to"' in filter_str
+
+
+class TestTerminalArticleView:
+    """Comprehensive tests for the TerminalArticleView component"""
+    
+    def test_article_view_basic_rendering(self):
+        """Test basic article view rendering with all elements"""
+        title = "Test Article Title"
+        meta = {
+            "id": 123,
+            "author": "Jane Doe", 
+            "date": "2024-01-15",
+            "tags": ["python", "testing", "fasthtml"]
+        }
+        summary = "This is a brief summary of the article content."
+        content = "This is the full content of the article with much more detail."
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Check overall structure
+        assert "terminal-article-view" in html_str
+        
+        # Check title rendering
+        assert title in html_str
+        assert "article-title" in html_str
+        
+        # Check metadata rendering
+        assert "Article Information" in html_str
+        assert "ID:" in html_str
+        assert "123" in html_str
+        assert "Author:" in html_str
+        assert "Jane Doe" in html_str
+        assert "Published:" in html_str
+        assert "2024-01-15" in html_str
+        assert "Tags:" in html_str
+        assert "python" in html_str
+        assert "testing" in html_str
+        assert "fasthtml" in html_str
+        
+        # Check summary section (visible by default)
+        assert "Summary" in html_str
+        assert summary in html_str
+        
+        # Check content section (hidden by default)
+        assert "Full Content" in html_str
+        assert "Show Full Content" in html_str
+        assert content in html_str
+        assert 'id="content-body"' in html_str
+        assert 'style="display: none' in html_str
+    
+    def test_article_view_with_url_title(self):
+        """Test article view with URL as title (should be clickable)"""
+        title = "https://example.com/article"
+        meta = {"author": "John Doe", "date": "2024-01-01"}
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should have clickable link
+        assert f'href="{title}"' in html_str
+        assert 'target="_blank"' in html_str
+        assert 'article-title-link' in html_str
+    
+    def test_article_view_with_source_url(self):
+        """Test article view with separate source URL in metadata"""
+        title = "Article Title"
+        meta = {
+            "author": "Jane Doe",
+            "date": "2024-01-01",
+            "source_url": "https://source.com/original"
+        }
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should have source URL link
+        assert "Source:" in html_str
+        assert "https://source.com/original" in html_str
+        assert 'target="_blank"' in html_str
+    
+    def test_article_view_with_back_url(self):
+        """Test article view with back button"""
+        title = "Test Title"
+        meta = {"author": "John Doe"}
+        summary = "Test summary"
+        content = "Test content"
+        back_url = "/search?query=test"
+        
+        html = components.TerminalArticleView(title, meta, summary, content, back_url)
+        html_str = str(html)
+        
+        # Should have back button with correct URL
+        assert "Back to Results" in html_str
+        assert f"window.location='{back_url}'" in html_str
+    
+    def test_article_view_without_back_url(self):
+        """Test article view without back URL (no back button)"""
+        title = "Test Title"
+        meta = {"author": "John Doe"}
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should not have back button when back_url is None
+        assert "Back to Results" not in html_str
+        
+        # But should still render other components
+        assert "terminal-article-view" in html_str
+        assert title in html_str
+        assert summary in html_str
+        assert content in html_str
+    
+    def test_article_view_minimal_metadata(self):
+        """Test article view with minimal metadata"""
+        title = "Test Title"
+        meta = {}  # Empty metadata
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should still render basic structure
+        assert "terminal-article-view" in html_str
+        assert title in html_str
+        assert summary in html_str
+        assert content in html_str
+        
+        # Should not have metadata section if no valid metadata
+        # (The current implementation checks for any valid metadata keys)
+    
+    def test_article_view_with_empty_tags(self):
+        """Test article view with empty tags list"""
+        title = "Test Title"
+        meta = {
+            "author": "John Doe",
+            "date": "2024-01-01",
+            "tags": []  # Empty tags
+        }
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should not show tags section if empty
+        assert "Author:" in html_str
+        assert "Published:" in html_str
+        # Tags section should not appear for empty list
+    
+    def test_article_view_javascript_functionality(self):
+        """Test that JavaScript toggle functionality is included"""
+        title = "Test Title"
+        meta = {"author": "John Doe"}
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should include toggle JavaScript
+        assert "function toggleContent()" in html_str
+        assert "getElementById('content-body')" in html_str
+        assert "getElementById('content-toggle-btn')" in html_str
+        assert "Show Full Content" in html_str
+        assert "Hide Full Content" in html_str
+        assert "onclick=\"toggleContent()\"" in html_str
+    
+    def test_article_view_accessibility_features(self):
+        """Test accessibility features in article view"""
+        title = "Test Title"
+        meta = {
+            "id": 123,
+            "author": "John Doe",
+            "date": "2024-01-01",
+            "tags": ["test"]
+        }
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should have proper semantic structure
+        assert "article-title" in html_str
+        assert "article-meta" in html_str
+        assert "article-summary" in html_str
+        assert "article-content" in html_str
+        
+        # Should have proper IDs for JavaScript interaction
+        assert 'id="content-toggle-btn"' in html_str
+        assert 'id="content-body"' in html_str
+    
+    def test_article_view_styling_classes(self):
+        """Test that proper CSS classes are applied"""
+        title = "Test Title"
+        meta = {"author": "John Doe"}
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should have terminal-specific styling classes
+        assert "terminal-article-view" in html_str
+        assert "article-title" in html_str
+        assert "article-meta" in html_str
+        assert "article-summary" in html_str
+        assert "article-content" in html_str
+        assert "article-summary-body" in html_str
+        assert "article-content-body" in html_str
+
+
+class TestArticleViewNavigation:
+    """Tests for article view navigation functionality"""
+    
+    def test_back_button_with_search_params(self):
+        """Test back button with search parameters"""
+        title = "Test Title"
+        meta = {"author": "John Doe"}
+        summary = "Test summary"
+        content = "Test content"
+        back_url = "/search?query=python&content_type=github&page=2"
+        
+        html = components.TerminalArticleView(title, meta, summary, content, back_url)
+        html_str = str(html)
+        
+        # Should preserve search parameters in back URL (may be HTML escaped)
+        assert "/search?query=python" in html_str
+        assert "content_type=github" in html_str
+        assert "page=2" in html_str
+        assert "Back to Results" in html_str
+    
+    def test_back_button_styling(self):
+        """Test back button has proper styling"""
+        title = "Test Title"
+        meta = {"author": "John Doe"}
+        summary = "Test summary"
+        content = "Test content"
+        back_url = "/search"
+        
+        html = components.TerminalArticleView(title, meta, summary, content, back_url)
+        html_str = str(html)
+        
+        # Should have proper button styling
+        assert "background: #666" in html_str
+        assert "color: #fff" in html_str
+        assert "border-radius: 4px" in html_str
+        assert "font-family: monospace" in html_str
+    
+    def test_title_link_navigation(self):
+        """Test title link navigation for URL titles"""
+        title = "https://example.com/article"
+        meta = {"author": "John Doe"}
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should have external link behavior
+        assert f'href="{title}"' in html_str
+        assert 'target="_blank"' in html_str
+        assert 'word-break: break-all' in html_str
+
+
+class TestArticleViewDataHandling:
+    """Tests for article view data handling edge cases"""
+    
+    def test_article_view_with_none_values(self):
+        """Test article view with None values in metadata"""
+        title = "Test Title"
+        meta = {
+            "author": None,
+            "date": None,
+            "tags": None,
+            "source_url": None
+        }
+        summary = "Test summary"
+        content = "Test content"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should handle None values gracefully
+        assert "terminal-article-view" in html_str
+        assert title in html_str
+        assert summary in html_str
+        assert content in html_str
+    
+    def test_article_view_with_long_content(self):
+        """Test article view with very long content"""
+        title = "Test Title"
+        meta = {"author": "John Doe"}
+        summary = "Short summary"
+        content = "Very long content " * 100  # Long content
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should include scroll functionality for long content
+        assert "max-height: 400px" in html_str
+        assert "overflow-y: auto" in html_str
+        assert content in html_str
+    
+    def test_article_view_with_special_characters(self):
+        """Test article view with special characters in content"""
+        title = "Test & Title <script>"
+        meta = {"author": "John & Jane <Doe>"}
+        summary = "Summary with <tags> & special chars"
+        content = "Content with 'quotes' & <html> tags"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should render content (FastHTML handles escaping)
+        assert "terminal-article-view" in html_str
+        # Note: FastHTML handles HTML escaping automatically
+    
+    def test_article_view_with_unicode_content(self):
+        """Test article view with Unicode content"""
+        title = "测试文章标题"
+        meta = {"author": "张三", "tags": ["测试", "中文"]}
+        summary = "这是一个简短的摘要"
+        content = "这是完整的文章内容，包含中文字符"
+        
+        html = components.TerminalArticleView(title, meta, summary, content)
+        html_str = str(html)
+        
+        # Should handle Unicode properly
+        assert "terminal-article-view" in html_str
+        assert title in html_str
+        assert summary in html_str
+        assert content in html_str

@@ -49,9 +49,12 @@ ARTICLES = [
         "author": "Jane Doe",
         "date": "2025-06-10",
         "tags": ["guide", "intro"],
+        "summary": "A brief guide on how to navigate and use the Knowledge Base effectively.",
         "content": (
             "Welcome to the retro Knowledge Base! Use the search bar above to "
-            "find articles."
+            "find articles. You can filter by content type, keywords, and date ranges. "
+            "Click on any article title to view the full content. The interface is "
+            "designed with an 80s terminal aesthetic for a unique user experience."
         ),
     },
     {
@@ -60,9 +63,14 @@ ARTICLES = [
         "author": "John Smith",
         "date": "2025-06-09",
         "tags": ["design", "retro"],
+        "summary": "Learn the principles and techniques for creating retro terminal-style user interfaces.",
         "content": (
             "This article explains how to create a retro terminal UI using "
-            "FastHTML."
+            "FastHTML. Key elements include monospace fonts, green/amber color schemes, "
+            "scanline effects, and blinking cursors. The design should evoke the feel "
+            "of 1980s computer terminals while maintaining modern usability standards. "
+            "FastHTML provides excellent support for custom CSS and interactive components "
+            "that make this aesthetic achievable with clean, semantic code."
         ),
     },
 ]
@@ -204,7 +212,8 @@ def article_view(article_id: int, back_url: str = "/"):
                     "author": "System",  
                     "date": datetime.fromtimestamp(article_data.get("timestamp", 0)).strftime('%Y-%m-%d') if article_data.get("timestamp") else "Unknown",
                     "tags": article_data.get("keywords", []),
-                    "content": article_data.get("summary", article_data.get("content", ""))
+                    "summary": article_data.get("summary", "No summary available"),
+                    "content": article_data.get("content", "No content available")
                 }
         except Exception as e:
             logger.error(f"Error getting article with ContentManager: {e}")
@@ -226,7 +235,8 @@ def article_view(article_id: int, back_url: str = "/"):
                     "author": "System",  
                     "date": datetime.fromtimestamp(article_data.get("timestamp", 0)).strftime('%Y-%m-%d') if article_data.get("timestamp") else "Unknown",
                     "tags": article_data.get("keywords", []),
-                    "content": article_data.get("summary", article_data.get("content", ""))
+                    "summary": article_data.get("summary", "No summary available"),
+                    "content": article_data.get("content", "No content available")
                 }
             else:
                 article = None
@@ -248,6 +258,7 @@ def article_view(article_id: int, back_url: str = "/"):
             "tags": article["tags"],
             "source_url": article.get("source_url", article["title"]) if article["title"].startswith('http') else None
         },
+        summary=article["summary"],
         content=article["content"],
         back_url=back_url
     )

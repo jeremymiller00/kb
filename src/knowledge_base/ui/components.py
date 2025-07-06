@@ -257,7 +257,7 @@ def TerminalResultsList(results, on_click=None, page=1, total_results=None, page
 
 
 # Article view (metadata + content) using FastHTML's Article, ArticleTitle, ArticleMeta
-def TerminalArticleView(title, meta, content, back_url=None):
+def TerminalArticleView(title, meta, summary, content, back_url=None):
     """
     Enhanced article view component using FastHTML's native Article, ArticleTitle, and ArticleMeta components
     with terminal styling and improved accessibility.
@@ -268,15 +268,17 @@ def TerminalArticleView(title, meta, content, back_url=None):
     if title and (title.startswith('http://') or title.startswith('https://')):
         title_element = ArticleTitle(
             A(title, href=title, target='_blank', cls='article-title-link',
-              style="color: #39ff14; text-decoration: none; word-break: break-all;"),
+              style="color: #39ff14; text-decoration: none; word-break: break-all; transition: color 0.2s ease;",
+              onmouseover="this.style.color='#66ff66'",
+              onmouseout="this.style.color='#39ff14'"),
             cls='article-title',
-            style="color: #ffe066; border-bottom: 2px solid #39ff14; padding-bottom: 0.5em; margin-bottom: 1em; font-size: 1.8em; font-weight: bold;"
+            style="color: #ffe066; border-bottom: 2px solid #39ff14; padding-bottom: 0.8em; margin-bottom: 1.5em; font-size: 1.8em; font-weight: bold; line-height: 1.3;"
         )
     else:
         title_element = ArticleTitle(
             title or "Untitled Article",
             cls='article-title',
-            style="color: #ffe066; border-bottom: 2px solid #39ff14; padding-bottom: 0.5em; margin-bottom: 1em; font-size: 1.8em; font-weight: bold;"
+            style="color: #ffe066; border-bottom: 2px solid #39ff14; padding-bottom: 0.8em; margin-bottom: 1.5em; font-size: 1.8em; font-weight: bold; line-height: 1.3;"
         )
     
     # Create enhanced metadata display with better structure
@@ -355,41 +357,89 @@ def TerminalArticleView(title, meta, content, back_url=None):
                 )
             )
         
-        # Create metadata container
+        # Create metadata container with improved styling
         meta_element = ArticleMeta(
+            H2("Article Information", style="color: #ffe066; margin-bottom: 1em; font-size: 1.1em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em;"),
             *meta_rows,
             cls='article-meta',
-            style="background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; padding: 1em; margin-bottom: 2em; font-size: 0.9em;"
+            style="background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; padding: 1.5em; margin-bottom: 2em; font-size: 0.9em;"
         )
     
-    # Create content section with improved formatting
-    content_element = Div(
-        H2("Content", style="color: #ffe066; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em; margin-bottom: 1em; font-size: 1.2em;"),
+    # Create summary section (always visible)
+    summary_element = Div(
+        H2("Summary", style="color: #ffe066; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em; margin-bottom: 1em; font-size: 1.2em;"),
         Div(
-            content,
-            cls='article-content-body',
-            style="color: #cccccc; line-height: 1.6; white-space: pre-wrap; max-width: 100%; overflow-wrap: break-word;"
+            summary,
+            cls='article-summary-body',
+            style="color: #cccccc; line-height: 1.6; white-space: pre-wrap; max-width: 100%; overflow-wrap: break-word; background: #222a22; padding: 1.5em; border: 1px solid #39ff1444; border-radius: 4px;"
         ),
+        cls='article-summary',
+        style="margin-bottom: 2em;"
+    )
+    
+    # Create full content section with expand/collapse functionality
+    content_element = Div(
+        # Content header with expand button
+        Div(
+            H2("Full Content", style="color: #ffe066; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em; margin-bottom: 1em; font-size: 1.2em; display: inline-block; margin-right: 1em;"),
+            Button(
+                "▼ Show Full Content",
+                id="content-toggle-btn",
+                onclick="toggleContent()",
+                style="background: #39ff14; color: #000; border: none; padding: 0.4em 0.8em; border-radius: 4px; font-family: monospace; font-weight: bold; cursor: pointer;"
+            ),
+            style="display: flex; align-items: center; margin-bottom: 1em;"
+        ),
+        # Hidden content section
+        Div(
+            Div(
+                content,
+                cls='article-content-body',
+                style="color: #cccccc; line-height: 1.6; white-space: pre-wrap; max-width: 100%; overflow-wrap: break-word; background: #1a1f1a; padding: 1.5em; border: 1px solid #39ff1444; border-radius: 4px; max-height: 400px; overflow-y: auto;"
+            ),
+            id="content-body",
+            style="display: none; margin-bottom: 1em;"
+        ),
+        # JavaScript for toggle functionality
+        Script("""
+        function toggleContent() {
+            const contentBody = document.getElementById('content-body');
+            const toggleBtn = document.getElementById('content-toggle-btn');
+            
+            if (contentBody.style.display === 'none') {
+                contentBody.style.display = 'block';
+                toggleBtn.textContent = '▲ Hide Full Content';
+                toggleBtn.style.background = '#ff6b6b';
+            } else {
+                contentBody.style.display = 'none';
+                toggleBtn.textContent = '▼ Show Full Content';
+                toggleBtn.style.background = '#39ff14';
+            }
+        }
+        """),
         cls='article-content',
         style="margin-bottom: 2em;"
     )
     
-    # Create back button
+    # Create back button with improved styling
     back_button = TerminalButton(
-        '← Back',
+        '← Back to Results',
         onclick=f"window.location='{back_url or '/'}'",
         primary=False,
-        style="margin-top: 1em; background: #666; color: #fff; padding: 0.5em 1em; border-radius: 4px;"
+        style="margin-top: 2em; background: #666; color: #fff; padding: 0.6em 1.2em; border-radius: 4px; font-family: monospace; font-weight: bold; border: 1px solid #999; transition: all 0.2s ease; cursor: pointer;",
+        onmouseover="this.style.background='#777'; this.style.borderColor='#aaa';",
+        onmouseout="this.style.background='#666'; this.style.borderColor='#999';"
     ) if back_url else None
     
-    # Use FastHTML's Article component
+    # Use FastHTML's Article component with improved styling
     return FastArticle(
         title_element,
         meta_element,
+        summary_element,
         content_element,
         back_button,
         cls='terminal-article-view',
-        style="background: #1a1f1a; border: 1px solid #39ff1444; border-radius: 4px; padding: 2em; margin: 1em 0;"
+        style="background: #1a1f1a; border: 1px solid #39ff1444; border-radius: 6px; padding: 2.5em; margin: 1em 0; box-shadow: 0 2px 8px rgba(57, 255, 20, 0.1);"
     )
 
 

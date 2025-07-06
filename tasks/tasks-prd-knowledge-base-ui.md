@@ -34,12 +34,12 @@
   - [x] 2.6 Paginate or lazy-load results for large result sets.
   - [x] 2.7 Write unit tests for search/filter logic and routes.
 
-- [ ] 3.0 Build Article View with Metadata, Content, and Navigation
+- [x] 3.0 Build Article View with Metadata, Content, and Navigation
   - [x] 3.1 Create an article view component using FastHTML (`Article`, `ArticleTitle`, `ArticleMeta`).
   - [x] 3.2 Render article metadata (title, author, date, tags) at the top, content below.
-  - [ ] 3.3 Add a back button using FastHTML's `Button` component to return to previous results or articles.
-  - [ ] 3.4 Ensure clear, readable formatting for article content and metadata.
-  - [ ] 3.5 Write unit tests for article view rendering and navigation.
+  - [x] 3.3 Add a back button using FastHTML's `Button` component to return to previous results or articles.
+  - [x] 3.4 Ensure clear, readable formatting for article content and metadata. Content should be hidden by default, with a button to unfold it below the other items on the page.
+  - [x] 3.5 Write unit tests for article view rendering and navigation.
 
 - [ ] 4.0 Implement Related Articles and Obsidian-Style Link Navigation
   - [ ] 4.1 Parse article content for keywords/links and render them as clickable FastHTML `A` components.
