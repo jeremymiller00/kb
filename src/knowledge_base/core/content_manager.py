@@ -450,3 +450,96 @@ class ContentManager():
         except Exception as e:
             self.logger.error(f"Error getting recent content: {e}")
             return []
+
+    def find_related_articles(self, article_id: int, keywords: List[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Find articles related to a given article, sorted by match strength.
+        
+        Args:
+            article_id: ID of the current article to find relations for
+            keywords: Optional list of keywords to search for. If not provided, will use the article's keywords
+            limit: Maximum number of related articles to return
+            
+        Returns:
+            List of related articles with match strength scores
+        """
+        if not self.db:
+            self.logger.error("Database not initialized. Cannot find related articles.")
+            return []
+        
+        try:
+            # First, get the current article to extract its keywords if none provided
+            if not keywords:
+                all_results = self.db.search_content({}, limit=1000)
+                current_article = next((result for result in all_results if result["id"] == article_id), None)
+                if not current_article:
+                    self.logger.error(f"Article with ID {article_id} not found")
+                    return []
+                keywords = current_article.get("keywords", [])
+            
+            if not keywords:
+                self.logger.warning(f"No keywords found for article {article_id}")
+                return []
+            
+            # Search for articles containing these keywords
+            related_results = self.search_content(keywords=keywords, limit=limit * 3)  # Get more to score and filter
+            
+            # Filter out the current article
+            related_results = [article for article in related_results if article["id"] != article_id]
+            
+            # Calculate match strength for each related article
+            scored_articles = []
+            for article in related_results:
+                article_keywords = article.get("keywords", [])
+                match_score = self._calculate_match_strength(keywords, article_keywords)
+                
+                # Add the match score to the article data
+                article_with_score = article.copy()
+                article_with_score["match_score"] = match_score
+                scored_articles.append(article_with_score)
+            
+            # Sort by match strength (highest first) and limit results
+            scored_articles.sort(key=lambda x: x["match_score"], reverse=True)
+            
+            self.logger.info(f"Found {len(scored_articles[:limit])} related articles for article {article_id}")
+            return scored_articles[:limit]
+            
+        except Exception as e:
+            self.logger.error(f"Error finding related articles: {e}")
+            return []
+
+    def _calculate_match_strength(self, source_keywords: List[str], target_keywords: List[str]) -> float:
+        """
+        Calculate match strength between two sets of keywords.
+        
+        Args:
+            source_keywords: Keywords from the source article
+            target_keywords: Keywords from the target article
+            
+        Returns:
+            Match strength score (0.0 to 1.0)
+        """
+        if not source_keywords or not target_keywords:
+            return 0.0
+        
+        # Convert to lowercase for case-insensitive comparison
+        source_set = set(keyword.lower().strip() for keyword in source_keywords)
+        target_set = set(keyword.lower().strip() for keyword in target_keywords)
+        
+        # Calculate Jaccard similarity (intersection over union)
+        intersection = len(source_set.intersection(target_set))
+        union = len(source_set.union(target_set))
+        
+        if union == 0:
+            return 0.0
+        
+        jaccard_similarity = intersection / union
+        
+        # Boost score based on number of exact matches
+        exact_matches = intersection
+        match_boost = min(exact_matches * 0.1, 0.5)  # Up to 0.5 boost for many matches
+        
+        # Final score combining similarity and match boost
+        final_score = min(jaccard_similarity + match_boost, 1.0)
+        
+        return final_score

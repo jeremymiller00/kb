@@ -5,7 +5,7 @@ pytest tests/core/test_content_manager.py -v
 import pytest
 import time
 from unittest.mock import Mock, patch
-from knowledge_base.core.content_manager import ContentManager
+from src.knowledge_base.core.content_manager import ContentManager
 
 @pytest.fixture
 def mock_logger():
@@ -46,6 +46,263 @@ def test_get_file_path(content_manager):
                          'huggingface', 'github_ipynb', 'general')
     assert timestamp.isdigit()
     assert url == 'https://example.com'
+
+
+class TestRelatedArticlesFunctionality:
+    """Tests for related articles functionality (Task 4.2)"""
+    
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database for testing"""
+        db = Mock()
+        db.search_content.return_value = [
+            {"id": 1, "keywords": ["python", "testing"], "summary": "Article 1"},
+            {"id": 2, "keywords": ["python", "web"], "summary": "Article 2"},
+            {"id": 3, "keywords": ["javascript", "web"], "summary": "Article 3"},
+            {"id": 4, "keywords": ["machine learning", "ai"], "summary": "Article 4"}
+        ]
+        return db
+    
+    @pytest.fixture 
+    def content_manager_with_db(self, mock_logger, mock_db):
+        """ContentManager with mocked database"""
+        cm = ContentManager(logger=mock_logger)
+        cm.db = mock_db
+        return cm
+    
+    def test_calculate_match_strength_identical_keywords(self, content_manager_with_db):
+        """Test match strength calculation with identical keywords"""
+        source = ["python", "testing", "web"]
+        target = ["python", "testing", "web"]
+        
+        score = content_manager_with_db._calculate_match_strength(source, target)
+        
+        # Should be perfect match (1.0)
+        assert score == 1.0
+    
+    def test_calculate_match_strength_partial_overlap(self, content_manager_with_db):
+        """Test match strength calculation with partial keyword overlap"""
+        source = ["python", "testing"]
+        target = ["python", "web", "javascript"]
+        
+        score = content_manager_with_db._calculate_match_strength(source, target)
+        
+        # Should calculate Jaccard similarity: 1 intersection / 4 union = 0.25
+        # Plus boost for 1 exact match: 0.25 + 0.1 = 0.35
+        assert 0.3 <= score <= 0.4
+    
+    def test_calculate_match_strength_no_overlap(self, content_manager_with_db):
+        """Test match strength calculation with no keyword overlap"""
+        source = ["python", "testing"]
+        target = ["javascript", "css"]
+        
+        score = content_manager_with_db._calculate_match_strength(source, target)
+        
+        # Should be 0.0 (no overlap)
+        assert score == 0.0
+    
+    def test_calculate_match_strength_empty_keywords(self, content_manager_with_db):
+        """Test match strength calculation with empty keyword lists"""
+        # Test empty source
+        score1 = content_manager_with_db._calculate_match_strength([], ["python"])
+        assert score1 == 0.0
+        
+        # Test empty target
+        score2 = content_manager_with_db._calculate_match_strength(["python"], [])
+        assert score2 == 0.0
+        
+        # Test both empty
+        score3 = content_manager_with_db._calculate_match_strength([], [])
+        assert score3 == 0.0
+    
+    def test_calculate_match_strength_case_insensitive(self, content_manager_with_db):
+        """Test that match strength calculation is case insensitive"""
+        source = ["Python", "TESTING"]
+        target = ["python", "testing", "web"]
+        
+        score = content_manager_with_db._calculate_match_strength(source, target)
+        
+        # Should match despite case differences
+        # 2 intersection / 3 union = 0.67 + boost for 2 matches = 0.67 + 0.2 = 0.87
+        assert score > 0.8
+    
+    def test_calculate_match_strength_boost_limit(self, content_manager_with_db):
+        """Test that match boost has a maximum limit"""
+        source = ["a", "b", "c", "d", "e", "f"]  # 6 keywords
+        target = ["a", "b", "c", "d", "e", "f"]  # All match
+        
+        score = content_manager_with_db._calculate_match_strength(source, target)
+        
+        # Should be 1.0 (perfect match) but not exceed 1.0 even with high boost
+        assert score == 1.0
+    
+    def test_find_related_articles_basic(self, content_manager_with_db, mock_db):
+        """Test basic related articles finding functionality"""
+        # Mock the search to return articles including the target article
+        mock_db.search_content.return_value = [
+            {"id": 1, "keywords": ["python", "testing"], "summary": "Target article"},
+            {"id": 2, "keywords": ["python", "web"], "summary": "Related article 1"},
+            {"id": 3, "keywords": ["python", "fasthtml"], "summary": "Related article 2"}
+        ]
+        
+        related = content_manager_with_db.find_related_articles(
+            article_id=1, 
+            keywords=["python", "testing"], 
+            limit=5
+        )
+        
+        # Should return related articles (excluding the target article)
+        assert len(related) == 2
+        assert all(article["id"] != 1 for article in related)  # Target article excluded
+        assert all("match_score" in article for article in related)
+        
+        # Should be sorted by match score (highest first)
+        if len(related) > 1:
+            for i in range(len(related) - 1):
+                assert related[i]["match_score"] >= related[i+1]["match_score"]
+    
+    def test_find_related_articles_no_keywords_provided(self, content_manager_with_db, mock_db):
+        """Test related articles when no keywords are provided (should extract from article)"""
+        # Mock search to return the target article and related ones
+        mock_db.search_content.return_value = [
+            {"id": 1, "keywords": ["python", "testing"], "summary": "Target article"},
+            {"id": 2, "keywords": ["python", "web"], "summary": "Related article"}
+        ]
+        
+        related = content_manager_with_db.find_related_articles(article_id=1, limit=5)
+        
+        # Should extract keywords from article 1 and find related
+        assert len(related) >= 0  # May be 0 or more depending on mock
+        mock_db.search_content.assert_called()  # Should have searched
+    
+    def test_find_related_articles_article_not_found(self, content_manager_with_db, mock_db):
+        """Test related articles when target article is not found"""
+        mock_db.search_content.return_value = [
+            {"id": 2, "keywords": ["python", "web"], "summary": "Other article"}
+        ]
+        
+        related = content_manager_with_db.find_related_articles(article_id=999, limit=5)
+        
+        # Should return empty list when target article not found
+        assert related == []
+    
+    def test_find_related_articles_no_db_connection(self, mock_logger):
+        """Test related articles functionality without database connection"""
+        cm = ContentManager(logger=mock_logger)  # No DB
+        
+        related = cm.find_related_articles(article_id=1, keywords=["python"], limit=5)
+        
+        # Should return empty list and log error
+        assert related == []
+        mock_logger.error.assert_called()
+    
+    def test_find_related_articles_limit_results(self, content_manager_with_db, mock_db):
+        """Test that related articles respects the limit parameter"""
+        # Mock search to return many articles
+        mock_articles = [
+            {"id": i, "keywords": ["python"], "summary": f"Article {i}"} 
+            for i in range(2, 12)  # Articles 2-11
+        ]
+        mock_articles.insert(0, {"id": 1, "keywords": ["python"], "summary": "Target"})
+        mock_db.search_content.return_value = mock_articles
+        
+        related = content_manager_with_db.find_related_articles(
+            article_id=1, 
+            keywords=["python"], 
+            limit=3
+        )
+        
+        # Should respect the limit
+        assert len(related) <= 3
+    
+    def test_find_related_articles_excludes_target(self, content_manager_with_db, mock_db):
+        """Test that target article is excluded from related articles"""
+        mock_db.search_content.return_value = [
+            {"id": 1, "keywords": ["python"], "summary": "Target article"},
+            {"id": 2, "keywords": ["python"], "summary": "Related article"}
+        ]
+        
+        related = content_manager_with_db.find_related_articles(
+            article_id=1, 
+            keywords=["python"], 
+            limit=5
+        )
+        
+        # Target article (id=1) should be excluded
+        assert all(article["id"] != 1 for article in related)
+        assert len(related) == 1
+        assert related[0]["id"] == 2
+    
+    def test_find_related_articles_adds_match_scores(self, content_manager_with_db, mock_db):
+        """Test that match scores are properly added to related articles"""
+        mock_db.search_content.return_value = [
+            {"id": 1, "keywords": ["python", "testing"], "summary": "Target"},
+            {"id": 2, "keywords": ["python", "web"], "summary": "Related 1"},
+            {"id": 3, "keywords": ["javascript"], "summary": "Related 2"}
+        ]
+        
+        related = content_manager_with_db.find_related_articles(
+            article_id=1, 
+            keywords=["python", "testing"], 
+            limit=5
+        )
+        
+        # All related articles should have match_score
+        for article in related:
+            assert "match_score" in article
+            assert isinstance(article["match_score"], float)
+            assert 0.0 <= article["match_score"] <= 1.0
+        
+        # Article with more keyword overlap should have higher score
+        if len(related) >= 2:
+            python_web_article = next((a for a in related if a["id"] == 2), None)
+            javascript_article = next((a for a in related if a["id"] == 3), None)
+            
+            if python_web_article and javascript_article:
+                # Article 2 shares "python" with target, Article 3 shares nothing
+                assert python_web_article["match_score"] > javascript_article["match_score"]
+
+
+class TestContentManagerSearchIntegration:
+    """Tests for search functionality that supports related articles"""
+    
+    @pytest.fixture
+    def content_manager_with_search_db(self, mock_logger):
+        """ContentManager with mocked search-capable database"""
+        cm = ContentManager(logger=mock_logger)
+        db = Mock()
+        db.search_content.return_value = [
+            {"id": 1, "keywords": ["python", "web"], "summary": "Article 1"},
+            {"id": 2, "keywords": ["python", "testing"], "summary": "Article 2"}
+        ]
+        cm.db = db
+        return cm
+    
+    def test_search_by_keywords_for_related_articles(self, content_manager_with_search_db):
+        """Test keyword search that supports related articles functionality"""
+        results = content_manager_with_search_db.search_by_keywords(["python"])
+        
+        # Should return search results
+        assert len(results) >= 0
+        assert isinstance(results, list)
+        
+        # Database search should have been called
+        content_manager_with_search_db.db.search_content.assert_called_once()
+    
+    def test_search_content_with_multiple_keywords(self, content_manager_with_search_db):
+        """Test content search with multiple keywords"""
+        results = content_manager_with_search_db.search_content(
+            keywords=["python", "testing"],
+            limit=10
+        )
+        
+        # Should call database search
+        assert isinstance(results, list)
+        content_manager_with_search_db.db.search_content.assert_called_once()
+        
+        # Should pass keywords parameter correctly
+        call_args = content_manager_with_search_db.db.search_content.call_args
+        assert 'keywords' in call_args[0][0]  # First positional arg should contain keywords
 
 
 def test_clean_url_removes_params(content_manager):

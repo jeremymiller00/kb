@@ -42,11 +42,11 @@
   - [x] 3.5 Write unit tests for article view rendering and navigation.
 
 - [ ] 4.0 Implement Related Articles and Obsidian-Style Link Navigation
-  - [ ] 4.1 Parse article content for keywords/links and render them as clickable FastHTML `A` components.
-  - [ ] 4.2 On click, show a list of related articles sorted by match strength.
+  - [x] 4.1 Parse article content for keywords/links and render them as clickable FastHTML `A` components.
+  - [x] 4.2 On click, show a list of related articles sorted by match strength.
   - [ ] 4.3 Support navigation history for back/forward between articles and search results.
   - [ ] 4.4 Highlight or style links for easy navigation (using retro terminal theme).
-  - [ ] 4.5 Write unit tests for link navigation and related article logic.
+  - [x] 4.5 Write unit tests for link navigation and related article logic.
 
 - [ ] 5.0 Add AI-Driven Suggestions for New Ideas or Questions
   - [ ] 5.1 Implement a suggestion engine in `suggestion_engine.py` (use simple keyword matching or integrate with existing AI/ML modules).

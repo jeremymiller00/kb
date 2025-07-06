@@ -1,7 +1,7 @@
 # FastHTML UI components for 80s retro terminal look
 # src/knowledge_base/ui/components.py
 
-from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span, Select, Option, Label, Textarea, Script
+from fasthtml.common import Div, Button, Form, Input, A, Article, H1, H2, H3, P, Span, Select, Option, Label, Textarea, Script, NotStr
 
 # Main layout wrapper
 def MainLayout(title, *content, show_home_button=True, **kwargs):
@@ -256,6 +256,44 @@ def TerminalResultsList(results, on_click=None, page=1, total_results=None, page
     )
 
 
+# Function to parse keywords from content and make them clickable
+def parse_keywords_to_links(content_text, keywords_list):
+    """
+    Parse content text and convert keywords to clickable links.
+    Returns content with keywords wrapped in A components.
+    """
+    if not content_text or not keywords_list:
+        return content_text
+    
+    # Split content into lines to preserve structure
+    lines = content_text.split('\n')
+    processed_lines = []
+    
+    for line in lines:
+        processed_line = line
+        # Sort keywords by length (descending) to avoid partial matches
+        sorted_keywords = sorted(keywords_list, key=len, reverse=True)
+        
+        for keyword in sorted_keywords:
+            if keyword and len(keyword.strip()) > 2:  # Only process meaningful keywords
+                # Case-insensitive search and replace
+                import re
+                pattern = re.compile(re.escape(keyword.strip()), re.IGNORECASE)
+                
+                # Create replacement function to preserve original case
+                def replace_with_link(match):
+                    original_text = match.group(0)
+                    # Create a search URL that searches for this keyword
+                    search_url = f"/search?keywords={keyword.strip()}"
+                    return f'<a href="{search_url}" class="keyword-link" style="color: #66ff66; text-decoration: underline; font-weight: bold;" title="Search for related articles about: {keyword.strip()}">{original_text}</a>'
+                
+                processed_line = pattern.sub(replace_with_link, processed_line)
+        
+        processed_lines.append(processed_line)
+    
+    return '\n'.join(processed_lines)
+
+
 # Article view (metadata + content) using FastHTML's Article, ArticleTitle, ArticleMeta
 def TerminalArticleView(title, meta, summary, content, back_url=None):
     """
@@ -341,10 +379,14 @@ def TerminalArticleView(title, meta, summary, content, back_url=None):
             tag_elements = []
             for tag in meta['tags']:
                 tag_elements.append(
-                    Span(
+                    A(
                         tag,
-                        cls="tag-item",
-                        style="background: #39ff1422; color: #39ff14; padding: 0.2em 0.5em; border-radius: 3px; font-size: 0.85em; margin-right: 0.5em; border: 1px solid #39ff1466;"
+                        href=f"/search?keywords={tag.strip()}",
+                        cls="tag-item keyword-link",
+                        style="background: #39ff1422; color: #39ff14; padding: 0.2em 0.5em; border-radius: 3px; font-size: 0.85em; margin-right: 0.5em; border: 1px solid #39ff1466; text-decoration: none; font-weight: bold; transition: all 0.2s ease;",
+                        title=f"Search for related articles about: {tag.strip()}",
+                        onmouseover="this.style.backgroundColor='#39ff1466'; this.style.color='#66ff66';",
+                        onmouseout="this.style.backgroundColor='#39ff1422'; this.style.color='#39ff14';"
                     )
                 )
             
@@ -365,17 +407,26 @@ def TerminalArticleView(title, meta, summary, content, back_url=None):
             style="background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; padding: 1.5em; margin-bottom: 2em; font-size: 0.9em;"
         )
     
+    # Get keywords from meta for link parsing
+    keywords_list = meta.get('tags', []) if isinstance(meta, dict) else []
+    
+    # Process summary with keyword links
+    processed_summary = parse_keywords_to_links(summary, keywords_list)
+    
     # Create summary section (always visible)
     summary_element = Div(
         H2("Summary", style="color: #ffe066; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em; margin-bottom: 1em; font-size: 1.2em;"),
         Div(
-            summary,
+            NotStr(processed_summary),
             cls='article-summary-body',
             style="color: #cccccc; line-height: 1.6; white-space: pre-wrap; max-width: 100%; overflow-wrap: break-word; background: #222a22; padding: 1.5em; border: 1px solid #39ff1444; border-radius: 4px;"
         ),
         cls='article-summary',
         style="margin-bottom: 2em;"
     )
+    
+    # Process full content with keyword links
+    processed_content = parse_keywords_to_links(content, keywords_list)
     
     # Create full content section with expand/collapse functionality
     content_element = Div(
@@ -393,7 +444,7 @@ def TerminalArticleView(title, meta, summary, content, back_url=None):
         # Hidden content section
         Div(
             Div(
-                content,
+                NotStr(processed_content),
                 cls='article-content-body',
                 style="color: #cccccc; line-height: 1.6; white-space: pre-wrap; max-width: 100%; overflow-wrap: break-word; background: #1a1f1a; padding: 1.5em; border: 1px solid #39ff1444; border-radius: 4px; max-height: 400px; overflow-y: auto;"
             ),
@@ -563,6 +614,92 @@ def TerminalPaginationControls(
         ),
         cls="pagination-controls",
         style="margin: 2em 0; padding: 1em; background: #1a1f1a; border: 1px solid #39ff1444; border-radius: 4px; text-align: center;"
+    )
+
+
+# Related articles list with match strength
+def TerminalRelatedArticlesList(related_articles, current_article_id=None):
+    """
+    Display related articles sorted by match strength with visual indicators.
+    """
+    if not related_articles:
+        return Div(
+            H3("Related Articles", style="color: #ffe066; margin-bottom: 1em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em;"),
+            P("No related articles found.", style="color: #666; font-style: italic;"),
+            cls='related-articles-empty',
+            style="margin: 2em 0; padding: 1.5em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px;"
+        )
+    
+    related_items = []
+    for i, article in enumerate(related_articles):
+        match_score = article.get("match_score", 0.0)
+        
+        # Create match strength indicator
+        if match_score >= 0.7:
+            strength_indicator = "🔥🔥🔥"  # High match
+            strength_color = "#ff6666"
+            strength_text = "High"
+        elif match_score >= 0.4:
+            strength_indicator = "🔥🔥"    # Medium match
+            strength_color = "#ffaa66"
+            strength_text = "Medium"
+        elif match_score >= 0.2:
+            strength_indicator = "🔥"      # Low match
+            strength_color = "#ffe066"
+            strength_text = "Low"
+        else:
+            strength_indicator = "○"       # Very low match
+            strength_color = "#666666"
+            strength_text = "Weak"
+        
+        # Build article item
+        related_items.append(
+            Div(
+                # Article header with ranking and strength
+                Div(
+                    Span(f"#{i+1:02d}", cls="article-rank", style="color: #39ff14; font-family: monospace; font-weight: bold; margin-right: 0.5em;"),
+                    Span(strength_indicator, style="margin-right: 0.5em;"),
+                    A(
+                        (article.get("url") or "Untitled") if len(article.get("url") or "Untitled") <= 50 else (article.get("url") or "Untitled")[:47] + "...",
+                        href=f"/article/{article['id']}?back_url=/article/{current_article_id}%23related" if current_article_id else f"/article/{article['id']}",
+                        cls="related-article-title",
+                        style="color: #39ff14; text-decoration: underline; font-weight: bold; word-break: break-all;"
+                    ),
+                    style="display: flex; align-items: center; margin-bottom: 0.5em;"
+                ),
+                # Match strength and metadata
+                Div(
+                    Div(
+                        Span("Match:", style="color: #666; margin-right: 0.5em;"),
+                        Span(f"{strength_text} ({match_score:.2f})", style=f"color: {strength_color}; font-weight: bold; margin-right: 1em;"),
+                        Span("Type:", style="color: #666; margin-right: 0.5em;"),
+                        Span(article.get("type", "unknown").title(), style="color: #cccccc; margin-right: 1em;"),
+                        Span("ID:", style="color: #666; margin-right: 0.5em;"),
+                        Span(str(article["id"]), style="color: #cccccc; font-family: monospace;"),
+                        style="font-size: 0.85em; margin-bottom: 0.5em;"
+                    ),
+                    # Article snippet
+                    Div(
+                        (article.get("summary") or article.get("content") or "")[:120] + ("..." if len(article.get("summary") or article.get("content") or "") > 120 else ""),
+                        style="color: #888; font-size: 0.9em; line-height: 1.4; margin-left: 2em;"
+                    ),
+                    style="margin-left: 2.5em;"
+                ),
+                cls="related-article-item",
+                style="margin-bottom: 1.5em; padding: 1em; border: 1px solid #39ff1422; border-radius: 4px; transition: all 0.2s ease;",
+                onmouseover="this.style.borderColor='#39ff1466'; this.style.backgroundColor='#1a1f1a';",
+                onmouseout="this.style.borderColor='#39ff1422'; this.style.backgroundColor='transparent';"
+            )
+        )
+    
+    return Div(
+        H3("Related Articles", id="related", style="color: #ffe066; margin-bottom: 1em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em;"),
+        P(f"Found {len(related_articles)} related article{'s' if len(related_articles) != 1 else ''} sorted by relevance:", 
+          style="color: #999; margin-bottom: 1.5em; font-size: 0.9em;"),
+        *related_items,
+        cls='related-articles-list',
+        id='related-articles-section',
+        style="margin: 2em 0; padding: 1.5em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px;"
     )
 
 

@@ -19,6 +19,7 @@ from ..ui.components import (
     TerminalFilterControls,
     TerminalUrlProcessor,
     TerminalPaginationControls,
+    TerminalRelatedArticlesList,
     HomeButton,
 )
 from ..core.content_manager import ContentManager
@@ -249,6 +250,16 @@ def article_view(article_id: int, back_url: str = "/"):
             Head(Title("Not found")),
             Body(MainLayout("ERROR", Div("Article not found")))
         )
+    
+    # Get related articles
+    related_articles = []
+    if content_manager:
+        try:
+            related_articles = content_manager.find_related_articles(article_id, limit=5)
+            logger.info(f"Found {len(related_articles)} related articles for article {article_id}")
+        except Exception as e:
+            logger.error(f"Error getting related articles: {e}")
+    
     article_content = TerminalArticleView(
         title=article["title"],
         meta={
@@ -262,10 +273,15 @@ def article_view(article_id: int, back_url: str = "/"):
         content=article["content"],
         back_url=back_url
     )
+    
+    # Create related articles component
+    related_articles_component = TerminalRelatedArticlesList(related_articles, current_article_id=article_id)
+    
     layout = MainLayout(
         "ARTICLE VIEW",
         article_content,
-        TerminalSuggestionBox(["Related: 80s Terminal UI Design"]),
+        related_articles_component,
+        TerminalSuggestionBox([f"Article ID: {article['id']}", f"Keywords: {', '.join(article['tags'][:3])}" if article['tags'] else "No keywords found"]),
     )
     return Html(
         Head(
@@ -621,6 +637,38 @@ def search_page(
 @rt('/ui')
 def ui_index():
     return index()
+
+
+@rt('/api/related/{article_id:int}')
+def get_related_articles_api(article_id: int, limit: int = 5):
+    """API endpoint to get related articles for a given article ID"""
+    if not content_manager:
+        return {"error": "ContentManager not available", "related_articles": []}
+    
+    try:
+        related_articles = content_manager.find_related_articles(article_id, limit=limit)
+        
+        # Format for API response
+        formatted_articles = []
+        for article in related_articles:
+            formatted_articles.append({
+                "id": article["id"],
+                "title": article.get("url", "Untitled"),
+                "summary": article.get("summary", "")[:120] + ("..." if len(article.get("summary", "")) > 120 else ""),
+                "type": article.get("type", "unknown"),
+                "match_score": article.get("match_score", 0.0),
+                "keywords": article.get("keywords", [])
+            })
+        
+        return {
+            "article_id": article_id,
+            "related_articles": formatted_articles,
+            "total_found": len(formatted_articles)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in related articles API: {e}")
+        return {"error": str(e), "related_articles": []}
 
 
 @rt('/process-text', methods=['POST'])
