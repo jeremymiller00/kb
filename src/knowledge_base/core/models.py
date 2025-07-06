@@ -45,6 +45,7 @@ class DocumentResponse(BaseModel):
     summary: Optional[str] = Field(None, description="AI-generated summary")
     keywords: Optional[List[str]] = Field(None, description="Extracted keywords")
     embeddings: Optional[List[float]] = Field(None, description="Vector embeddings")
+    similarity_score: Optional[float] = Field(None, description="Cosine similarity score (lower is more similar)")
 
     model_config = ConfigDict(from_attributes=True)
 

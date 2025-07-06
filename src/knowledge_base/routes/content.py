@@ -269,3 +269,43 @@ def search_content(
     except Exception as e:
         logger.error(f"Error searching documents: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{content_id}/similar", response_model=List[DocumentResponse])
+def get_similar_articles(
+    content_id: int,
+    n: int = Query(20, description="Number of similar articles to return", ge=1, le=100),
+    debug: bool = Query(False, description="Use knowledge base test database"),
+    db: Database = Depends(get_db)
+):
+    """Find articles similar to the given article using cosine similarity on embeddings."""
+    if debug:
+        db = Database(logger=logger, connection_string=os.getenv('TEST_DB_CONN_STRING'))
+    try:
+        # First get the embedding of the source document
+        source_doc = db.get_content(content_id)
+        if not source_doc:
+            raise HTTPException(status_code=404, detail="Source document not found")
+        
+        if not source_doc.get('embeddings'):
+            raise HTTPException(status_code=400, detail="Source document has no embeddings")
+        
+        # Find similar documents using the new similarity method
+        similar_docs = db.find_similar_documents(
+            source_embedding=source_doc['embeddings'],
+            limit=n,
+            exclude_id=content_id
+        )
+        
+        # Create DocumentResponse objects with similarity scores
+        response_docs = []
+        for doc in similar_docs:
+            # Map similarity_distance to similarity_score
+            doc_data = doc.copy()
+            doc_data['similarity_score'] = doc_data.pop('similarity_distance', None)
+            response_docs.append(DocumentResponse(**doc_data))
+        
+        return response_docs
+    except Exception as e:
+        logger.error(f"Error finding similar articles: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
