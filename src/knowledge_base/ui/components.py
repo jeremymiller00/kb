@@ -618,13 +618,35 @@ def TerminalPaginationControls(
 
 
 # Related articles list with match strength
-def TerminalRelatedArticlesList(related_articles, current_article_id=None):
+def TerminalRelatedArticlesList(related_articles, current_article_id=None, algorithm_used="similarity", use_keywords=False):
     """
-    Display related articles sorted by match strength with visual indicators.
+    Display related articles sorted by match strength with visual indicators and algorithm toggle.
     """
+    # Create algorithm toggle header
+    toggle_url = f"/article/{current_article_id}?use_keywords={'false' if use_keywords else 'true'}" if current_article_id else "#"
+    toggle_text = "Switch to Similarity" if use_keywords else "Switch to Keywords"
+    algorithm_label = "Keywords" if use_keywords else "Similarity"
+    
+    header_section = Div(
+        Div(
+            H3("Related Articles", style="color: #ffe066; margin-bottom: 0.5em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em; display: inline-block;"),
+            Div(
+                Span(f"Algorithm: {algorithm_label}", style="color: #39ff14; font-weight: bold; margin-right: 1em;"),
+                A(
+                    f"[{toggle_text}]",
+                    href=toggle_url,
+                    style="color: #ffe066; text-decoration: underline; font-size: 0.9em; cursor: pointer;",
+                    title=f"Switch to {'similarity-based' if use_keywords else 'keyword-based'} algorithm"
+                ),
+                style="font-size: 0.85em; margin-top: 0.5em;"
+            ),
+            style="margin-bottom: 1em;"
+        )
+    )
+    
     if not related_articles:
         return Div(
-            H3("Related Articles", style="color: #ffe066; margin-bottom: 1em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em;"),
+            header_section,
             P("No related articles found.", style="color: #666; font-style: italic;"),
             cls='related-articles-empty',
             style="margin: 2em 0; padding: 1.5em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px;"
@@ -693,7 +715,7 @@ def TerminalRelatedArticlesList(related_articles, current_article_id=None):
         )
     
     return Div(
-        H3("Related Articles", id="related", style="color: #ffe066; margin-bottom: 1em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em;"),
+        header_section,
         P(f"Found {len(related_articles)} related article{'s' if len(related_articles) != 1 else ''} sorted by relevance:", 
           style="color: #999; margin-bottom: 1.5em; font-size: 0.9em;"),
         *related_items,
@@ -767,7 +789,7 @@ def TerminalUrlProcessor(placeholder='Enter URL to process...', **kwargs):
                     style='margin-bottom:1em;display:flex;align-items:center;gap:0.5em;'
                 ),
                 Label(
-                    Input(type='checkbox', name='jina', value='true', checked=True),
+                    Input(type='checkbox', name='jina', value='true'),
                     ' Use Jina for processing (recommended for PDFs)',
                     style='margin-bottom:1em;display:flex;align-items:center;gap:0.5em;'
                 ),

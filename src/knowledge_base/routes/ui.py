@@ -196,7 +196,7 @@ def index():
 
 
 @rt('/article/{article_id:int}')
-def article_view(article_id: int, back_url: str = "/"):
+def article_view(article_id: int, back_url: str = "/", use_keywords: bool = False):
     # Try to fetch article using ContentManager first
     article = None
     if content_manager:
@@ -251,14 +251,75 @@ def article_view(article_id: int, back_url: str = "/"):
             Body(MainLayout("ERROR", Div("Article not found")))
         )
     
-    # Get related articles
+    # Get related articles using similarity-based algorithm by default
     related_articles = []
-    if content_manager:
+    algorithm_used = "similarity"
+    
+    if use_keywords:
+        # Use keyword-based algorithm when requested
+        if content_manager:
+            try:
+                related_articles = content_manager.find_related_articles(article_id, limit=5)
+                algorithm_used = "keywords"
+                logger.info(f"Found {len(related_articles)} related articles for article {article_id} using keyword algorithm")
+            except Exception as e:
+                logger.error(f"Error getting related articles with keyword algorithm: {e}")
+    else:
+        # Use similarity-based algorithm by default
         try:
-            related_articles = content_manager.find_related_articles(article_id, limit=5)
-            logger.info(f"Found {len(related_articles)} related articles for article {article_id}")
+            api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+            similar_url = f"{api_base_url}/content/{article_id}/similar?n=5"
+            
+            response = requests.get(similar_url)
+            
+            if response.status_code == 200:
+                similar_articles = response.json()
+                # Convert similarity results to match the expected format
+                related_articles = []
+                for similar_article in similar_articles:
+                    similarity_score = similar_article.get("similarity_score", 0.0)
+                    
+                    # Skip articles with zero similarity score (no relevance)
+                    if similarity_score <= 0:
+                        continue
+                        
+                    article_data = {
+                        "id": similar_article["id"],
+                        "url": similar_article.get("url", "Untitled"),
+                        "type": similar_article.get("type", "unknown"),
+                        "summary": similar_article.get("summary", ""),
+                        "content": similar_article.get("content", ""),
+                        "keywords": similar_article.get("keywords", []),
+                        # Convert similarity_score to match_score for consistency with UI component
+                        "match_score": similarity_score
+                    }
+                    related_articles.append(article_data)
+                
+                # Sort by similarity score/match_score in descending order (highest relevance first)
+                related_articles.sort(key=lambda x: x.get("match_score", 0.0), reverse=True)
+                
+                algorithm_used = "similarity"
+                logger.info(f"Found {len(related_articles)} related articles for article {article_id} using similarity algorithm")
+            else:
+                logger.warning(f"Similarity API returned status {response.status_code}, falling back to keyword algorithm")
+                # Fallback to keyword algorithm if similarity fails
+                if content_manager:
+                    try:
+                        related_articles = content_manager.find_related_articles(article_id, limit=5)
+                        algorithm_used = "keywords (fallback)"
+                        logger.info(f"Found {len(related_articles)} related articles for article {article_id} using keyword fallback")
+                    except Exception as e:
+                        logger.error(f"Error getting related articles with keyword fallback: {e}")
         except Exception as e:
-            logger.error(f"Error getting related articles: {e}")
+            logger.error(f"Error getting related articles with similarity algorithm: {e}")
+            # Fallback to keyword algorithm if similarity fails
+            if content_manager:
+                try:
+                    related_articles = content_manager.find_related_articles(article_id, limit=5)
+                    algorithm_used = "keywords (fallback)"
+                    logger.info(f"Found {len(related_articles)} related articles for article {article_id} using keyword fallback")
+                except Exception as e:
+                    logger.error(f"Error getting related articles with keyword fallback: {e}")
     
     article_content = TerminalArticleView(
         title=article["title"],
@@ -274,8 +335,13 @@ def article_view(article_id: int, back_url: str = "/"):
         back_url=back_url
     )
     
-    # Create related articles component
-    related_articles_component = TerminalRelatedArticlesList(related_articles, current_article_id=article_id)
+    # Create related articles component with algorithm toggle
+    related_articles_component = TerminalRelatedArticlesList(
+        related_articles, 
+        current_article_id=article_id,
+        algorithm_used=algorithm_used,
+        use_keywords=use_keywords
+    )
     
     layout = MainLayout(
         "ARTICLE VIEW",
