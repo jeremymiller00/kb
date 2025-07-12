@@ -1,4 +1,5 @@
 # Knowledge Base
+branch: ai-suggestions
 
 ## Features
 - Supports summarization of web content from URLs, ArXiv papers, and GitHub repositories
