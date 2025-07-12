@@ -1,5 +1,4 @@
 # Knowledge Base
-Branch: vector-sim
 
 ## Features
 - Supports summarization of web content from URLs, ArXiv papers, and GitHub repositories
