@@ -725,16 +725,500 @@ def TerminalRelatedArticlesList(related_articles, current_article_id=None, algor
     )
 
 
-# Suggestion box for AI-driven ideas/questions
-def TerminalSuggestionBox(suggestions):
+# AI Suggestions Sidebar - collapsible component with button trigger
+def TerminalSuggestionsPanel(suggestions=None, article_id=None, show_trigger=True):
+    """
+    AI-powered suggestions panel that displays as a collapsible sidebar.
+    Can be triggered on-demand via button or shown immediately.
+    """
+    if show_trigger:
+        # Show trigger button when suggestions aren't loaded yet
+        return Div(
+            Button(
+                "🤖 Get AI Suggestions",
+                id="suggestions-trigger-btn",
+                onclick=f"loadSuggestions({article_id})" if article_id else "loadSuggestions()",
+                style="background: #39ff14; color: #000; border: none; padding: 0.8em 1.2em; border-radius: 4px; font-family: monospace; font-weight: bold; cursor: pointer; margin: 1em 0; transition: all 0.2s ease;",
+                onmouseover="this.style.background='#66ff66'; this.style.transform='scale(1.02)';",
+                onmouseout="this.style.background='#39ff14'; this.style.transform='scale(1)';"
+            ),
+            # Hidden sidebar panel that will be populated with suggestions
+            Div(
+                id="suggestions-sidebar",
+                style="display: none; position: fixed; top: 0; right: -400px; width: 380px; height: 100vh; background: #1a1f1a; border-left: 2px solid #39ff14; box-shadow: -4px 0 8px rgba(0,0,0,0.3); z-index: 1000; transition: right 0.3s ease; overflow-y: auto; padding: 1.5em;"
+            ),
+            # JavaScript for loading and displaying suggestions
+            Script("""
+            let suggestionsLoaded = false;
+            
+            function loadSuggestions(articleId = null) {
+                const triggerBtn = document.getElementById('suggestions-trigger-btn');
+                const sidebar = document.getElementById('suggestions-sidebar');
+                
+                console.log('loadSuggestions called with articleId:', articleId);
+                console.log('triggerBtn:', triggerBtn);
+                console.log('sidebar:', sidebar);
+                
+                if (!suggestionsLoaded) {
+                    // Show loading state
+                    triggerBtn.textContent = '🔄 Loading Suggestions...';
+                    triggerBtn.disabled = true;
+                    
+                    // Real API call to fetch suggestions
+                    const suggestionCount = 5; // Default count
+                    const forceFresh = true; // Always generate fresh
+                    const apiBaseUrl = 'http://127.0.0.1:8000'; // FastAPI server
+                    const apiUrl = `${apiBaseUrl}/api/suggestions/${articleId}?count=${suggestionCount}&force_fresh=${forceFresh}`;
+                    
+                    console.log('Fetching suggestions from:', apiUrl);
+                    
+                    // Add timeout to the fetch request
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                    
+                    fetch(apiUrl, { 
+                        signal: controller.signal,
+                        mode: 'cors',
+                        credentials: 'include'
+                    })
+                        .then(response => {
+                            clearTimeout(timeoutId);
+                            console.log('API response status:', response.status);
+                            console.log('API response headers:', response.headers);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('API response data:', data);
+                            if (data.success && data.suggestions) {
+                                showRealSuggestions(data.suggestions, data.context);
+                            } else {
+                                console.log('API failed or no suggestions, showing fallback');
+                                showSampleSuggestions(); // Fallback to sample
+                            }
+                            suggestionsLoaded = true;
+                            triggerBtn.textContent = '🤖 Show/Hide AI Suggestions';
+                            triggerBtn.disabled = false;
+                        })
+                        .catch(error => {
+                            clearTimeout(timeoutId);
+                            console.error('Error fetching suggestions:', error);
+                            console.error('Error type:', error.name);
+                            console.error('Error message:', error.message);
+                            if (error.name === 'AbortError') {
+                                console.log('Request timed out after 30 seconds');
+                            }
+                            showSampleSuggestions(); // Fallback to sample
+                            suggestionsLoaded = true;
+                            triggerBtn.textContent = '🤖 Show/Hide AI Suggestions';
+                            triggerBtn.disabled = false;
+                        });
+                } else {
+                    console.log('Suggestions already loaded, toggling sidebar');
+                    toggleSidebar();
+                }
+            }
+            
+            function toggleSidebar() {
+                const sidebar = document.getElementById('suggestions-sidebar');
+                const isVisible = sidebar.style.right === '0px';
+                
+                if (isVisible) {
+                    sidebar.style.right = '-400px';
+                    sidebar.style.display = 'none';
+                } else {
+                    sidebar.style.display = 'block';
+                    sidebar.style.right = '0px';
+                }
+            }
+            
+            function closeSidebar() {
+                const sidebar = document.getElementById('suggestions-sidebar');
+                sidebar.style.right = '-400px';
+                sidebar.style.display = 'none';
+            }
+            
+            function showRealSuggestions(suggestions, context) {
+                console.log('showRealSuggestions called with:', suggestions, context);
+                const sidebar = document.getElementById('suggestions-sidebar');
+                
+                // Generate suggestions HTML from real API data
+                const suggestionsHtml = suggestions.map((suggestion, index) => {
+                    const typeColors = {
+                        'question': '#ff6b6b',
+                        'strategy': '#4ecdc4', 
+                        'application': '#45b7d1',
+                        'implementation': '#f9ca24',
+                        'topic': '#f0932b'
+                    };
+                    
+                    const typeIcons = {
+                        'question': '❓',
+                        'strategy': '📊',
+                        'application': '🏥',
+                        'implementation': '⚙️',
+                        'topic': '📋'
+                    };
+                    
+                    const suggestionType = suggestion.type || 'topic';
+                    const typeColor = typeColors[suggestionType] || '#39ff14';
+                    const typeIcon = typeIcons[suggestionType] || '💡';
+                    
+                    return `
+                        <div style="margin-bottom: 1.2em; padding: 1em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; transition: all 0.2s ease;" 
+                             onmouseover="this.style.borderColor='#39ff1466'; this.style.backgroundColor='#2a2f2a';"
+                             onmouseout="this.style.borderColor='#39ff1444'; this.style.backgroundColor='#222a22';">
+                            <div style="display: flex; align-items: center; margin-bottom: 0.5em;">
+                                <span style="margin-right: 0.5em; font-size: 1.1em;">${typeIcon}</span>
+                                <span style="color: ${typeColor}; font-size: 0.75em; text-transform: uppercase; font-weight: bold; margin-right: 0.5em;">${suggestionType}</span>
+                                <span style="color: #666; font-size: 0.7em;">#${index + 1}</span>
+                            </div>
+                            <div style="color: #ffe066; font-weight: bold; margin-bottom: 0.5em; font-size: 0.9em; line-height: 1.3;">
+                                ${suggestion.title || `Suggestion ${index + 1}`}
+                            </div>
+                            <div style="color: #cccccc; font-size: 0.8em; line-height: 1.4;">
+                                ${suggestion.description || 'No description available.'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Context info for debugging
+                const contextInfo = context ? `
+                    <div style="margin-bottom: 1em; padding: 0.8em; background: #1a2a1a; border: 1px solid #39ff1422; border-radius: 4px; font-size: 0.75em; color: #999;">
+                        <div style="color: #39ff14; margin-bottom: 0.3em;">📊 Generation Info:</div>
+                        <div>Suggestions: ${context.suggestion_count || 0}/${context.requested_count || 0}</div>
+                        <div>Recent articles: ${context.recent_articles_count || 0}</div>
+                        <div>Similar articles: ${context.similar_articles_count || 0}</div>
+                        <div>Generation time: ${context.generation_time_ms || 0}ms</div>
+                        <div>Fresh generation: ${context.force_fresh ? 'Yes' : 'No'}</div>
+                        <div>Generated: ${new Date(context.generated_at || Date.now()).toLocaleTimeString()}</div>
+                    </div>
+                ` : '';
+                
+                sidebar.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5em; padding-bottom: 0.5em; border-bottom: 1px solid #39ff1444;">
+                        <h3 style="color: #ffe066; margin: 0; font-size: 1.1em;">🤖 AI Suggestions</h3>
+                        <button onclick="closeSidebar()" style="background: none; border: none; color: #39ff14; font-size: 1.2em; cursor: pointer; padding: 0.2em;">✕</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 1em; padding: 0.8em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px;">
+                        <div style="color: #39ff14; font-size: 0.85em; margin-bottom: 0.5em; font-weight: bold;">⚙️ Settings</div>
+                        <label style="display: block; color: #cccccc; font-size: 0.8em; margin-bottom: 0.8em;">
+                            Suggestion Count:
+                            <select id="suggestion-count-select" onchange="updateSuggestionCount()" style="margin-left: 0.5em; background: #1a1f1a; color: #39ff14; border: 1px solid #39ff1444; padding: 0.2em;">
+                                <option value="3">3</option>
+                                <option value="5" selected>5 (default)</option>
+                                <option value="8">8</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="50">50</option>
+                                <option value="100">100 (max)</option>
+                            </select>
+                        </label>
+                        <label style="display: block; color: #cccccc; font-size: 0.8em; margin-bottom: 0.5em;">
+                            <input type="checkbox" id="fresh-generation-check" checked style="margin-right: 0.5em; accent-color: #39ff14;">
+                            Always generate fresh (no caching)
+                        </label>
+                        <div style="color: #666; font-size: 0.7em; font-style: italic;">
+                            Higher counts may take longer to generate
+                        </div>
+                    </div>
+                    
+                    ${contextInfo}
+                    
+                    <div id="suggestions-content">
+                        ${suggestionsHtml}
+                    </div>
+                    
+                    <div style="margin-top: 1.5em; padding-top: 1em; border-top: 1px solid #39ff1444;">
+                        <button onclick="regenerateSuggestions()" style="width: 100%; background: #39ff14; color: #000; border: none; padding: 0.6em; border-radius: 4px; font-family: monospace; font-weight: bold; cursor: pointer;">
+                            🔄 Regenerate Suggestions
+                        </button>
+                    </div>
+                `;
+                
+                // Show the sidebar
+                console.log('Showing sidebar, setting right to 0px');
+                sidebar.style.display = 'block';
+                sidebar.style.right = '0px';
+            }
+            
+            function showSampleSuggestions() {
+                console.log('showSampleSuggestions called');
+                const sidebar = document.getElementById('suggestions-sidebar');
+                sidebar.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5em; padding-bottom: 0.5em; border-bottom: 1px solid #39ff1444;">
+                        <h3 style="color: #ffe066; margin: 0; font-size: 1.1em;">🤖 AI Suggestions</h3>
+                        <button onclick="closeSidebar()" style="background: none; border: none; color: #39ff14; font-size: 1.2em; cursor: pointer; padding: 0.2em;">✕</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 1em; padding: 0.8em; background: #ff4444; border: 1px solid #ff6666; border-radius: 4px;">
+                        <div style="color: #fff; font-size: 0.85em; margin-bottom: 0.5em; font-weight: bold;">⚠️ Fallback Mode</div>
+                        <div style="color: #ffdddd; font-size: 0.8em;">Using sample suggestions - API unavailable</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1em; padding: 0.8em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px;">
+                        <div style="color: #39ff14; font-size: 0.85em; margin-bottom: 0.5em; font-weight: bold;">⚙️ Settings</div>
+                        <label style="display: block; color: #cccccc; font-size: 0.8em; margin-bottom: 0.8em;">
+                            Suggestion Count:
+                            <select id="suggestion-count-select-fallback" onchange="updateSuggestionCount()" style="margin-left: 0.5em; background: #1a1f1a; color: #39ff14; border: 1px solid #39ff1444; padding: 0.2em;">
+                                <option value="3">3</option>
+                                <option value="5" selected>5 (default)</option>
+                                <option value="8">8</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="50">50</option>
+                                <option value="100">100 (max)</option>
+                            </select>
+                        </label>
+                        <label style="display: block; color: #cccccc; font-size: 0.8em; margin-bottom: 0.5em;">
+                            <input type="checkbox" id="fresh-generation-check-fallback" checked disabled style="margin-right: 0.5em; accent-color: #39ff14;">
+                            Always generate fresh (fallback mode)
+                        </label>
+                        <div style="color: #666; font-size: 0.7em; font-style: italic;">
+                            Using sample suggestions - API unavailable
+                        </div>
+                    </div>
+                    
+                    <div id="suggestions-content">
+                        ${generateSampleSuggestions()}
+                    </div>
+                    
+                    <div style="margin-top: 1.5em; padding-top: 1em; border-top: 1px solid #39ff1444;">
+                        <button onclick="regenerateSuggestions()" style="width: 100%; background: #39ff14; color: #000; border: none; padding: 0.6em; border-radius: 4px; font-family: monospace; font-weight: bold; cursor: pointer;">
+                            🔄 Regenerate Suggestions
+                        </button>
+                    </div>
+                `;
+                
+                // Show the sidebar
+                console.log('Showing fallback sidebar, setting right to 0px');
+                sidebar.style.display = 'block';
+                sidebar.style.right = '0px';
+            }
+            
+            function generateSampleSuggestions() {
+                const suggestions = [
+                    {
+                        type: 'question',
+                        title: 'Implementation Challenges',
+                        description: 'What are the key technical and regulatory hurdles for implementing this AI solution in healthcare settings?'
+                    },
+                    {
+                        type: 'strategy',
+                        title: 'ROI Analysis Framework',
+                        description: 'How can we measure and demonstrate the business value and patient outcomes of this approach?'
+                    },
+                    {
+                        type: 'application',
+                        title: 'Clinical Workflow Integration',
+                        description: 'Which specific healthcare workflows would benefit most from this technology and why?'
+                    },
+                    {
+                        type: 'implementation',
+                        title: 'Data Infrastructure Requirements',
+                        description: 'What data sources, APIs, and infrastructure would be needed to operationalize this solution?'
+                    },
+                    {
+                        type: 'topic',
+                        title: 'Regulatory Compliance Considerations',
+                        description: 'How do HIPAA, FDA guidelines, and other regulations impact the development and deployment strategy?'
+                    }
+                ];
+                
+                return suggestions.map((suggestion, index) => {
+                    const typeColors = {
+                        'question': '#ff6b6b',
+                        'strategy': '#4ecdc4', 
+                        'application': '#45b7d1',
+                        'implementation': '#f9ca24',
+                        'topic': '#f0932b'
+                    };
+                    
+                    const typeIcons = {
+                        'question': '❓',
+                        'strategy': '📊',
+                        'application': '🏥',
+                        'implementation': '⚙️',
+                        'topic': '📋'
+                    };
+                    
+                    return `
+                        <div style="margin-bottom: 1.2em; padding: 1em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; transition: all 0.2s ease;" 
+                             onmouseover="this.style.borderColor='#39ff1466'; this.style.backgroundColor='#2a2f2a';"
+                             onmouseout="this.style.borderColor='#39ff1444'; this.style.backgroundColor='#222a22';">
+                            <div style="display: flex; align-items: center; margin-bottom: 0.5em;">
+                                <span style="margin-right: 0.5em; font-size: 1.1em;">${typeIcons[suggestion.type]}</span>
+                                <span style="color: ${typeColors[suggestion.type]}; font-size: 0.75em; text-transform: uppercase; font-weight: bold; margin-right: 0.5em;">${suggestion.type}</span>
+                                <span style="color: #666; font-size: 0.7em;">#${index + 1}</span>
+                            </div>
+                            <div style="color: #ffe066; font-weight: bold; margin-bottom: 0.5em; font-size: 0.9em; line-height: 1.3;">
+                                ${suggestion.title}
+                            </div>
+                            <div style="color: #cccccc; font-size: 0.8em; line-height: 1.4;">
+                                ${suggestion.description}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            function regenerateSuggestions() {
+                const content = document.getElementById('suggestions-content');
+                content.innerHTML = '<div style="text-align: center; color: #39ff14; padding: 2em;">🔄 Regenerating suggestions...</div>';
+                
+                // Get current suggestion count and fresh generation setting
+                const countSelect = document.getElementById('suggestion-count-select');
+                const freshCheck = document.getElementById('fresh-generation-check');
+                const suggestionCount = countSelect ? countSelect.value : 5;
+                const forceFresh = freshCheck ? freshCheck.checked : true;
+                
+                // Get article ID from the current page (assuming it's in the URL or passed to loadSuggestions)
+                const urlParts = window.location.pathname.split('/');
+                const articleId = urlParts[urlParts.indexOf('article') + 1];
+                
+                if (articleId) {
+                    const apiBaseUrl = 'http://127.0.0.1:8000'; // FastAPI server
+                    fetch(`${apiBaseUrl}/api/suggestions/${articleId}?count=${suggestionCount}&force_fresh=${forceFresh}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.suggestions) {
+                                // Update just the content area with new suggestions
+                                const suggestionsHtml = data.suggestions.map((suggestion, index) => {
+                                    const typeColors = {
+                                        'question': '#ff6b6b',
+                                        'strategy': '#4ecdc4', 
+                                        'application': '#45b7d1',
+                                        'implementation': '#f9ca24',
+                                        'topic': '#f0932b'
+                                    };
+                                    
+                                    const typeIcons = {
+                                        'question': '❓',
+                                        'strategy': '📊',
+                                        'application': '🏥',
+                                        'implementation': '⚙️',
+                                        'topic': '📋'
+                                    };
+                                    
+                                    const suggestionType = suggestion.type || 'topic';
+                                    const typeColor = typeColors[suggestionType] || '#39ff14';
+                                    const typeIcon = typeIcons[suggestionType] || '💡';
+                                    
+                                    return `
+                                        <div style="margin-bottom: 1.2em; padding: 1em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; transition: all 0.2s ease;" 
+                                             onmouseover="this.style.borderColor='#39ff1466'; this.style.backgroundColor='#2a2f2a';"
+                                             onmouseout="this.style.borderColor='#39ff1444'; this.style.backgroundColor='#222a22';">
+                                            <div style="display: flex; align-items: center; margin-bottom: 0.5em;">
+                                                <span style="margin-right: 0.5em; font-size: 1.1em;">${typeIcon}</span>
+                                                <span style="color: ${typeColor}; font-size: 0.75em; text-transform: uppercase; font-weight: bold; margin-right: 0.5em;">${suggestionType}</span>
+                                                <span style="color: #666; font-size: 0.7em;">#${index + 1}</span>
+                                            </div>
+                                            <div style="color: #ffe066; font-weight: bold; margin-bottom: 0.5em; font-size: 0.9em; line-height: 1.3;">
+                                                ${suggestion.title || `Suggestion ${index + 1}`}
+                                            </div>
+                                            <div style="color: #cccccc; font-size: 0.8em; line-height: 1.4;">
+                                                ${suggestion.description || 'No description available.'}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('');
+                                
+                                content.innerHTML = suggestionsHtml;
+                            } else {
+                                content.innerHTML = generateSampleSuggestions();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error regenerating suggestions:', error);
+                            content.innerHTML = generateSampleSuggestions();
+                        });
+                } else {
+                    // Fallback to sample suggestions if no article ID
+                    setTimeout(() => {
+                        content.innerHTML = generateSampleSuggestions();
+                    }, 1000);
+                }
+            }
+            
+            function updateSuggestionCount() {
+                // Trigger regeneration with new count
+                regenerateSuggestions();
+            }
+            """),
+            cls="ai-suggestions-panel",
+            style="margin: 2em 0;"
+        )
+    
+    # When suggestions are provided, show them directly in the sidebar format
+    if suggestions:
+        suggestion_items = []
+        for i, suggestion in enumerate(suggestions):
+            type_colors = {
+                'question': '#ff6b6b',
+                'strategy': '#4ecdc4', 
+                'application': '#45b7d1',
+                'implementation': '#f9ca24',
+                'topic': '#f0932b'
+            }
+            
+            type_icons = {
+                'question': '❓',
+                'strategy': '📊',
+                'application': '🏥',
+                'implementation': '⚙️',
+                'topic': '📋'
+            }
+            
+            suggestion_type = suggestion.get('type', 'topic')
+            type_color = type_colors.get(suggestion_type, '#39ff14')
+            type_icon = type_icons.get(suggestion_type, '💡')
+            
+            suggestion_items.append(
+                Div(
+                    Div(
+                        Span(type_icon, style="margin-right: 0.5em; font-size: 1.1em;"),
+                        Span(suggestion_type.upper(), style=f"color: {type_color}; font-size: 0.75em; text-transform: uppercase; font-weight: bold; margin-right: 0.5em;"),
+                        Span(f"#{i + 1}", style="color: #666; font-size: 0.7em;"),
+                        style="display: flex; align-items: center; margin-bottom: 0.5em;"
+                    ),
+                    Div(
+                        suggestion.get('title', f'Suggestion {i + 1}'),
+                        style="color: #ffe066; font-weight: bold; margin-bottom: 0.5em; font-size: 0.9em; line-height: 1.3;"
+                    ),
+                    Div(
+                        suggestion.get('description', 'No description available.'),
+                        style="color: #cccccc; font-size: 0.8em; line-height: 1.4;"
+                    ),
+                    style="margin-bottom: 1.2em; padding: 1em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; transition: all 0.2s ease;",
+                    onmouseover="this.style.borderColor='#39ff1466'; this.style.backgroundColor='#2a2f2a';",
+                    onmouseout="this.style.borderColor='#39ff1444'; this.style.backgroundColor='#222a22';"
+                )
+            )
+        
+        return Div(
+            H3("🤖 AI Suggestions", style="color: #ffe066; margin-bottom: 1em; font-size: 1.1em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em;"),
+            *suggestion_items,
+            cls="suggestions-list",
+            style="margin: 2em 0; padding: 1.5em; background: #1a1f1a; border: 1px solid #39ff1444; border-radius: 4px;"
+        )
+    
+    # Default empty state
     return Div(
-        H3('Suggestions'),
-        *[
-            Div(s, cls='highlight', style='margin-bottom:0.5em;')
-            for s in suggestions
-        ],
-        cls='suggestion-box',
-        style='margin-top:2em;'
+        Button(
+            "🤖 Get AI Suggestions",
+            style="background: #39ff14; color: #000; border: none; padding: 0.8em 1.2em; border-radius: 4px; font-family: monospace; font-weight: bold; cursor: pointer;",
+            onclick="alert('AI suggestions feature will be implemented soon!')"
+        ),
+        cls="ai-suggestions-placeholder",
+        style="margin: 2em 0; text-align: center; padding: 2em; background: #222a22; border: 1px dashed #39ff1444; border-radius: 4px;"
     )
 
 

@@ -543,3 +543,33 @@ class ContentManager():
         final_score = min(jaccard_similarity + match_boost, 1.0)
         
         return final_score
+    
+    def get_document_by_id(self, document_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get a document by its database ID.
+        
+        Args:
+            document_id: The database ID of the document
+            
+        Returns:
+            Document data dictionary if found, None otherwise
+        """
+        if not self.db:
+            self.logger.error("Database not initialized. Cannot get document by ID.")
+            return None
+        
+        try:
+            # Get all documents and find the one with matching ID
+            all_results = self.db.search_content({}, limit=10000)
+            document = next((result for result in all_results if result["id"] == document_id), None)
+            
+            if document:
+                self.logger.debug(f"Found document with ID {document_id}")
+                return document
+            else:
+                self.logger.warning(f"Document with ID {document_id} not found")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error getting document by ID {document_id}: {e}")
+            return None

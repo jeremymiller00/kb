@@ -2,6 +2,7 @@ import os
 import re
 import openai
 import backoff
+import logging
 from functools import partial
 from dotenv import load_dotenv
 
@@ -9,6 +10,8 @@ from .base_llm import BaseLLM
 from ..utils.prompts import PROMPTS
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAILLM(BaseLLM):
@@ -117,7 +120,7 @@ class OpenAILLM(BaseLLM):
                                 temperature=1, max_tokens=1024, top_p=1, 
                                 frequency_penalty=0, presence_penalty=0):
 
-        self.logger.debug("Generating completion using OpenAI API")
+        logger.debug("Generating completion using OpenAI API")
         response = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=[{"role": "system", "content": system_prompt},
@@ -127,7 +130,7 @@ class OpenAILLM(BaseLLM):
                         top_p=top_p,
                         frequency_penalty=frequency_penalty,
                         presence_penalty=presence_penalty)
-        self.logger.debug("Completion generated successfully.")
+        logger.debug("Completion generated successfully.")
         return response
 
     def generate_embedding(self, text_snippet):

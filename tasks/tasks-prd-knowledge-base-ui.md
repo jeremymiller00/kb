@@ -51,10 +51,13 @@
   - [X] 4.7 Use existing keyword similarity algorithm and cosine similarity from document embeddings via fastapi for finding related articles. Allow the user to toggle between them and set a preference. The default should be cosine similarity 
 
 - [ ] 5.0 Add AI-Driven Suggestions for New Ideas or Questions
-  - [ ] 5.1 Implement a suggestion engine in `suggestion_engine.py`. 
-  - [ ] 5.2 Display suggestions in the article view using a FastHTML component (e.g., below the article or in a sidebar).
-  - [ ] 5.3 Ensure suggestions update based on current article or search context.
-  - [ ] 5.4 Write unit tests for suggestion generation and display.
+  - [x] 5.1 Implement a suggestion engine in `suggestion_engine.py` using OpenAI GPT-4.1 mini to generate follow-up questions, related topics, and practical AI solution ideas tailored for an AI Product Manager persona in healthcare analytics.
+  - [x] 5.2 Create a collapsible sidebar component in the article view using FastHTML that displays suggestions on-demand via a button trigger.
+  - [x] 5.3 Add user session tracking to maintain browsing history for context-aware suggestions.
+  - [x] 5.4 Configure suggestion generation to use context from: current article content, last 5 articles viewed by user, and top 5 articles by cosine similarity (via existing content similarity endpoint).
+  - [x] 5.5 Implement configurable suggestion count (default 5, max 100) and ensure suggestions are generated fresh each time (no caching).
+ 
+  - [ ] 5.6 Write unit tests for suggestion generation, context gathering, and sidebar display functionality.
 
 - [ ] 6.0 Ensure Accessibility, Deep-Linking, and Performance Requirements
   - [ ] 6.1 Test and improve keyboard navigation and screen reader support.

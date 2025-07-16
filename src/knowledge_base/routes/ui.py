@@ -15,7 +15,7 @@ from ..ui.components import (
     TerminalResultsList,
     TerminalArticleView,
     TerminalNavControls,
-    TerminalSuggestionBox,
+    TerminalSuggestionsPanel,
     TerminalFilterControls,
     TerminalUrlProcessor,
     TerminalPaginationControls,
@@ -23,6 +23,7 @@ from ..ui.components import (
     HomeButton,
 )
 from ..core.content_manager import ContentManager
+from ..core.session_manager import SessionManager
 from ..extractors.extractor_factory import ExtractorFactory
 from ..ai.llm_factory import LLMFactory
 from ..storage.database import Database
@@ -41,6 +42,14 @@ if not logger.handlers:
 # Initialize ContentManager with database connection
 db_connection_string = os.getenv('DB_CONN_STRING')
 content_manager = ContentManager(logger, db_connection_string) if db_connection_string else None
+
+# Initialize SessionManager for tracking user browsing history
+session_manager = SessionManager(
+    storage_path=os.path.expanduser("~/.kb_sessions.json"),
+    session_expiry_hours=24
+)
+
+# Note: Suggestion services are now handled by the FastAPI app at /api/suggestions/*
 
 # Demo data for articles (fallback)
 ARTICLES = [
@@ -180,7 +189,7 @@ def index():
         search_bar,
         url_processor,
         results,
-        TerminalSuggestionBox(["Try searching for 'retro' or 'guide', or process a URL above."]),
+        TerminalSuggestionsPanel(show_trigger=False),
     )
     return Html(
         Head(
@@ -196,7 +205,14 @@ def index():
 
 
 @rt('/article/{article_id:int}')
-def article_view(article_id: int, back_url: str = "/", use_keywords: bool = False):
+def article_view(request, article_id: int, back_url: str = "/", use_keywords: bool = False):
+    # Handle session tracking for browsing history
+    session_id = request.cookies.get('kb_session_id')
+    if not session_id:
+        # Create new session if none exists
+        session_id = session_manager.create_session()
+        logger.info(f"Created new session for article view: {session_id}")
+    
     # Try to fetch article using ContentManager first
     article = None
     if content_manager:
@@ -250,6 +266,25 @@ def article_view(article_id: int, back_url: str = "/", use_keywords: bool = Fals
             Head(Title("Not found")),
             Body(MainLayout("ERROR", Div("Article not found")))
         )
+    
+    # Record article view in session for context-aware suggestions (via API call)
+    try:
+        api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+        record_url = f"{api_base_url}/api/session/{session_id}/record-view"
+        
+        record_data = {
+            "article_id": str(article_id),
+            "article_url": article.get("title", ""),
+            "article_summary": article.get("summary", "")
+        }
+        
+        response = requests.post(record_url, params=record_data)
+        if response.status_code == 200:
+            logger.debug(f"Successfully recorded article view for session {session_id}")
+        else:
+            logger.warning(f"Failed to record article view: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Error recording article view: {e}")
     
     # Get related articles using similarity-based algorithm by default
     related_articles = []
@@ -347,13 +382,20 @@ def article_view(article_id: int, back_url: str = "/", use_keywords: bool = Fals
         "ARTICLE VIEW",
         article_content,
         related_articles_component,
-        TerminalSuggestionBox([f"Article ID: {article['id']}", f"Keywords: {', '.join(article['tags'][:3])}" if article['tags'] else "No keywords found"]),
+        TerminalSuggestionsPanel(article_id=article_id, show_trigger=True),
     )
+    
+    # Return the standard FastHTML response
+    # Note: Session cookie will be set via JavaScript if needed, or we can handle it at the app level
     return Html(
         Head(
             Title(article["title"]),
             Link(id="theme-stylesheet", rel="stylesheet", href="/static/styles/retro_terminal.css"),
             Script(src="/static/js/style-toggle.js"),
+            # Add session cookie via JavaScript
+            Script(f"""
+                document.cookie = "kb_session_id={session_id}; max-age=86400; path=/; samesite=lax";
+            """)
         ),
         Body(
             layout,
@@ -680,7 +722,7 @@ def search_page(
         layout_elements.append(pagination_controls)
     
     # Add suggestions at the end
-    layout_elements.append(TerminalSuggestionBox(suggestions))
+    layout_elements.append(TerminalSuggestionsPanel(show_trigger=False))
     
     layout = MainLayout(
         "SEARCH RESULTS",
@@ -703,6 +745,11 @@ def search_page(
 @rt('/ui')
 def ui_index():
     return index()
+
+
+# Session management endpoints moved to FastAPI app at /api/session/*
+
+
 
 
 @rt('/api/related/{article_id:int}')

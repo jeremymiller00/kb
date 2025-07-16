@@ -2,6 +2,12 @@
 
 echo "Starting Knowledge Base application..."
 
+# Clean up any existing processes on ports 5001 and 8000
+echo "Cleaning up existing processes..."
+lsof -ti:5001 | xargs kill -9 2>/dev/null || true
+lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+sleep 1
+
 # Check if postgres is running, start if not
 # Not using for now since pg is managed by mac app
 # if ! brew services list | grep postgresql | grep started > /dev/null; then
