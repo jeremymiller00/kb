@@ -50,11 +50,11 @@
   - [x] 4.6 Create cosine sim route in the fast api app
   - [x] 4.7 Use existing keyword similarity algorithm and cosine similarity from document embeddings via fastapi for finding related articles. Allow the user to toggle between them and set a preference. The default should be cosine similarity 
 
-- [ ] 5.0 Add AI-Driven Suggestions for New Ideas or Questions
-  - [ ] 5.1 Implement a suggestion engine in `suggestion_engine.py`. 
-  - [ ] 5.2 Display suggestions in the article view using a FastHTML component (e.g., below the article or in a sidebar).
-  - [ ] 5.3 Ensure suggestions update based on current article or search context.
-  - [ ] 5.4 Write unit tests for suggestion generation and display.
+- [x] 5.0 Add AI-Driven Suggestions for New Ideas or Questions
+  - [x] 5.1 Implement a suggestion engine in `suggestion_engine.py`. 
+  - [x] 5.2 Display suggestions in the article view using a FastHTML component (e.g., below the article or in a sidebar).
+  - [x] 5.3 Ensure suggestions update based on current article or search context.
+  - [x] 5.4 Write unit tests for suggestion generation and display.
 
 - [ ] 6.0 Ensure Accessibility, Deep-Linking, and Performance Requirements
   - [ ] 6.1 Test and improve keyboard navigation and screen reader support.

@@ -101,7 +101,7 @@ def test_terminal_nav_controls_renders(back_url, next_url):
         assert "Next" in str(html)
 
 
-# Test TerminalSuggestionBox
+# Test TerminalSuggestionBox - Basic functionality
 @pytest.mark.parametrize(
     "suggestions",
     [
@@ -110,12 +110,184 @@ def test_terminal_nav_controls_renders(back_url, next_url):
         ["Idea 1", "Idea 2"],
     ]
 )
-def test_terminal_suggestion_box_renders(suggestions):
+def test_terminal_suggestion_box_renders_simple_text(suggestions):
+    """Test TerminalSuggestionBox with simple text suggestions (backward compatibility)."""
     html = components.TerminalSuggestionBox(suggestions)
     assert "suggestion-box" in str(html)
-    assert "Suggestions" in str(html)
-    for s in suggestions:
-        assert s in str(html)
+    
+    if not suggestions:
+        assert "No suggestions available" in str(html)
+    else:
+        assert "AI Suggestions" in str(html)
+        for s in suggestions:
+            # Handle HTML escaping of quotes
+            if "'" in s:
+                assert "&#x27;" in str(html)  # HTML escaped single quote
+            else:
+                assert s in str(html)
+
+
+# Test TerminalSuggestionBox - Enhanced AI suggestions
+def test_terminal_suggestion_box_renders_structured_suggestions():
+    """Test TerminalSuggestionBox with structured AI suggestion objects."""
+    structured_suggestions = [
+        {
+            "text": "How does machine learning work?",
+            "type": "question",
+            "action": "/search?keywords=machine-learning",
+            "keywords": ["machine-learning", "how-to"]
+        },
+        {
+            "text": "Explore deep learning algorithms",
+            "type": "explore", 
+            "action": "/search?keywords=deep-learning",
+            "keywords": ["deep-learning", "algorithms"]
+        },
+        {
+            "text": "Compare supervised vs unsupervised learning",
+            "type": "compare",
+            "action": "/search?keywords=supervised,unsupervised",
+            "keywords": ["supervised", "unsupervised"]
+        }
+    ]
+    
+    html = components.TerminalSuggestionBox(structured_suggestions)
+    html_str = str(html)
+    
+    # Check overall structure
+    assert "suggestion-box enhanced" in html_str
+    assert "AI Suggestions" in html_str
+    assert "✨" in html_str  # Sparkle emoji in header
+    
+    # Check each suggestion is rendered
+    assert "How does machine learning work?" in html_str
+    assert "Explore deep learning algorithms" in html_str
+    assert "Compare supervised vs unsupervised learning" in html_str
+    
+    # Check type-specific icons and labels
+    assert "❓" in html_str  # Question icon
+    assert "🔍" in html_str  # Explore icon
+    assert "⚖️" in html_str  # Compare icon
+    
+    # Check type labels
+    assert "Question" in html_str
+    assert "Explore" in html_str
+    assert "Compare" in html_str
+    
+    # Check actions are rendered as links
+    assert "/search?keywords=machine-learning" in html_str
+    assert "/search?keywords=deep-learning" in html_str
+    assert "/search?keywords=supervised,unsupervised" in html_str
+    
+    # Check keywords are displayed
+    assert "Keywords: machine-learning, how-to" in html_str
+
+
+def test_terminal_suggestion_box_empty_suggestions():
+    """Test TerminalSuggestionBox with empty suggestions list."""
+    html = components.TerminalSuggestionBox([])
+    html_str = str(html)
+    
+    assert "suggestion-box" in html_str
+    assert "Suggestions" in html_str
+    assert "No suggestions available" in html_str
+
+
+def test_terminal_suggestion_box_mixed_suggestions():
+    """Test TerminalSuggestionBox with mix of structured and simple suggestions."""
+    mixed_suggestions = [
+        {
+            "text": "Structured AI suggestion",
+            "type": "explore",
+            "action": "/search?keywords=test",
+            "keywords": ["test"]
+        },
+        "Simple text suggestion"
+    ]
+    
+    html = components.TerminalSuggestionBox(mixed_suggestions)
+    html_str = str(html)
+    
+    # Both types should be rendered
+    assert "Structured AI suggestion" in html_str
+    assert "Simple text suggestion" in html_str
+    
+    # Structured suggestion should have enhanced styling
+    assert "🔍" in html_str  # Explore icon
+    assert "/search?keywords=test" in html_str
+    
+    # Simple suggestion should have basic styling
+    assert "💡" in html_str  # Light bulb icon for simple suggestions
+
+
+def test_terminal_suggestion_box_suggestion_types():
+    """Test different suggestion types render with correct styling."""
+    suggestions = [
+        {"text": "Question suggestion", "type": "question", "action": "/search", "keywords": []},
+        {"text": "Explore suggestion", "type": "explore", "action": "/search", "keywords": []},
+        {"text": "Compare suggestion", "type": "compare", "action": "/search", "keywords": []},
+        {"text": "Unknown type", "type": "unknown", "action": "/search", "keywords": []}
+    ]
+    
+    html = components.TerminalSuggestionBox(suggestions)
+    html_str = str(html)
+    
+    # Check type-specific icons
+    assert "❓" in html_str  # Question
+    assert "🔍" in html_str  # Explore (should appear twice - explore and unknown default)
+    assert "⚖️" in html_str  # Compare
+    
+    # Check type labels
+    assert "Question" in html_str
+    assert "Explore" in html_str  # Should appear twice
+    assert "Compare" in html_str
+
+
+def test_terminal_suggestion_box_long_text_truncation():
+    """Test that very long suggestion text is handled properly."""
+    long_suggestions = [
+        {
+            "text": "This is an extremely long suggestion text that should be truncated or handled gracefully by the component to maintain good UI layout and user experience" * 2,
+            "type": "explore",
+            "action": "/search",
+            "keywords": ["long", "text"]
+        }
+    ]
+    
+    html = components.TerminalSuggestionBox(long_suggestions)
+    html_str = str(html)
+    
+    # Should still render without breaking
+    assert "suggestion-box" in html_str
+    assert "extremely long" in html_str
+
+
+def test_terminal_suggestion_box_keywords_display():
+    """Test keywords display in suggestions."""
+    suggestions_with_keywords = [
+        {
+            "text": "Test with many keywords",
+            "type": "explore",
+            "action": "/search",
+            "keywords": ["key1", "key2", "key3", "key4", "key5"]  # More than 3 keywords
+        },
+        {
+            "text": "Test with no keywords",
+            "type": "explore", 
+            "action": "/search",
+            "keywords": []
+        }
+    ]
+    
+    html = components.TerminalSuggestionBox(suggestions_with_keywords)
+    html_str = str(html)
+    
+    # Should show only first 3 keywords
+    assert "key1, key2, key3" in html_str
+    assert "key4" not in html_str  # Should not show 4th and 5th keywords
+    
+    # Second suggestion should not show keywords section since it has none
+    # (This is handled by the conditional rendering in the component)
 
 
 # Test ArticleTitle

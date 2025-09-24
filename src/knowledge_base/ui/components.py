@@ -727,14 +727,93 @@ def TerminalRelatedArticlesList(related_articles, current_article_id=None, algor
 
 # Suggestion box for AI-driven ideas/questions
 def TerminalSuggestionBox(suggestions):
+    """
+    Enhanced suggestion box that supports both simple text strings and 
+    structured AI suggestion objects with types, actions, and keywords.
+    
+    Args:
+        suggestions: List of strings or dict objects with 'text', 'type', 'action', 'keywords'
+    """
+    if not suggestions:
+        return Div(
+            H3('Suggestions', style='color: #ffe066; margin-bottom: 1em;'),
+            P('No suggestions available at the moment.', style='color: #666; font-style: italic;'),
+            cls='suggestion-box',
+            style='margin-top: 2em; padding: 1.5em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px;'
+        )
+    
+    suggestion_items = []
+    
+    for i, suggestion in enumerate(suggestions):
+        if isinstance(suggestion, dict):
+            # Handle structured AI suggestions
+            text = suggestion.get('text', 'Explore more topics')
+            suggestion_type = suggestion.get('type', 'explore')
+            action = suggestion.get('action', '/search')
+            keywords = suggestion.get('keywords', [])
+            
+            # Choose icon and color based on suggestion type
+            if suggestion_type == 'question':
+                icon = '❓'
+                type_color = '#66aaff'
+                type_label = 'Question'
+            elif suggestion_type == 'compare':
+                icon = '⚖️'
+                type_color = '#ffaa66'
+                type_label = 'Compare'
+            else:  # explore
+                icon = '🔍'
+                type_color = '#66ff66'
+                type_label = 'Explore'
+            
+            # Create clickable suggestion with enhanced styling
+            suggestion_element = Div(
+                # Icon and suggestion text
+                Div(
+                    Span(icon, style=f'margin-right: 0.5em; font-size: 1.1em;'),
+                    A(
+                        text,
+                        href=action,
+                        cls='suggestion-link',
+                        style=f'color: {type_color}; text-decoration: none; font-weight: bold; line-height: 1.4; transition: all 0.2s ease;',
+                        onmouseover=f'this.style.color="#fff"; this.style.textDecoration="underline";',
+                        onmouseout=f'this.style.color="{type_color}"; this.style.textDecoration="none";'
+                    ),
+                    style='display: flex; align-items: flex-start; margin-bottom: 0.3em;'
+                ),
+                # Type and keywords metadata
+                Div(
+                    Span(f'{type_label}', style=f'color: {type_color}; font-size: 0.8em; font-weight: bold; margin-right: 1em;'),
+                    *([Span(f'Keywords: {", ".join(keywords[:3])}', style='color: #666; font-size: 0.8em;')] if keywords else []),
+                    style='margin-left: 1.8em; opacity: 0.8;'
+                ),
+                cls='suggestion-item',
+                style='margin-bottom: 1em; padding: 0.8em; background: #1a1f1a; border: 1px solid #39ff1422; border-radius: 4px; transition: all 0.2s ease; cursor: pointer;',
+                onmouseover='this.style.borderColor="#39ff1466"; this.style.backgroundColor="#222a22";',
+                onmouseout='this.style.borderColor="#39ff1422"; this.style.backgroundColor="#1a1f1a";',
+                onclick=f'window.location="{action}"'
+            )
+            
+        else:
+            # Handle simple text suggestions (backward compatibility)
+            suggestion_element = Div(
+                Span('💡', style='margin-right: 0.5em; font-size: 1.1em;'),
+                Span(str(suggestion), style='color: #39ff14; line-height: 1.4;'),
+                cls='suggestion-item-simple',
+                style='margin-bottom: 0.8em; padding: 0.8em; background: #1a1f1a; border: 1px solid #39ff1422; border-radius: 4px; display: flex; align-items: flex-start;'
+            )
+        
+        suggestion_items.append(suggestion_element)
+    
     return Div(
-        H3('Suggestions'),
-        *[
-            Div(s, cls='highlight', style='margin-bottom:0.5em;')
-            for s in suggestions
-        ],
-        cls='suggestion-box',
-        style='margin-top:2em;'
+        H3(
+            'AI Suggestions',
+            Span('✨', style='margin-left: 0.5em; font-size: 0.9em;'),
+            style='color: #ffe066; margin-bottom: 1em; border-bottom: 1px solid #39ff1444; padding-bottom: 0.3em; display: flex; align-items: center; justify-content: space-between;'
+        ),
+        *suggestion_items,
+        cls='suggestion-box enhanced',
+        style='margin-top: 2em; padding: 1.5em; background: #222a22; border: 1px solid #39ff1444; border-radius: 4px; box-shadow: 0 2px 4px rgba(57, 255, 20, 0.1);'
     )
 
 

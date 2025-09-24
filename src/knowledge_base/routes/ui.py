@@ -25,6 +25,7 @@ from ..ui.components import (
 from ..core.content_manager import ContentManager
 from ..extractors.extractor_factory import ExtractorFactory
 from ..ai.llm_factory import LLMFactory
+from ..ai.suggestion_engine import SuggestionEngine
 from ..storage.database import Database
 
 app, rt = fast_app()
@@ -41,6 +42,10 @@ if not logger.handlers:
 # Initialize ContentManager with database connection
 db_connection_string = os.getenv('DB_CONN_STRING')
 content_manager = ContentManager(logger, db_connection_string) if db_connection_string else None
+
+# Initialize SuggestionEngine
+suggestion_engine = SuggestionEngine(LLMFactory(), content_manager)
+suggestion_engine.set_logger(logger)
 
 # Demo data for articles (fallback)
 ARTICLES = [
@@ -175,12 +180,30 @@ def index():
             ]
     
     results = TerminalResultsList(articles_data)
+    
+    # Generate AI-driven suggestions for home page
+    try:
+        home_context = {
+            'recent_articles': articles_data[:5] if articles_data else [],
+            'total_articles': len(articles_data) if articles_data else 0
+        }
+        
+        ai_suggestions = suggestion_engine.generate_suggestions('home', home_context, limit=3)
+        
+        # Use full AI suggestion objects
+        home_suggestions = ai_suggestions
+        
+    except Exception as e:
+        logger.error(f"Error generating AI suggestions for home page: {e}")
+        # Fallback to basic suggestions (simple text format)
+        home_suggestions = ["Try searching for 'retro' or 'guide', or process a URL above."]
+    
     layout = MainLayout(
         "KNOWLEDGE BASE",
         search_bar,
         url_processor,
         results,
-        TerminalSuggestionBox(["Try searching for 'retro' or 'guide', or process a URL above."]),
+        TerminalSuggestionBox(home_suggestions),
     )
     return Html(
         Head(
@@ -343,11 +366,35 @@ def article_view(article_id: int, back_url: str = "/", use_keywords: bool = Fals
         use_keywords=use_keywords
     )
     
+    # Generate AI-driven suggestions based on article context
+    try:
+        article_context = {
+            'title': article['title'],
+            'summary': article['summary'],
+            'content': article['content'],
+            'keywords': article['tags'],
+            'article_id': article['id']
+        }
+        
+        ai_suggestions = suggestion_engine.generate_suggestions('article', article_context, limit=3)
+        
+        # Pass full suggestion objects to the component
+        suggestions_for_display = ai_suggestions
+        
+    except Exception as e:
+        logger.error(f"Error generating AI suggestions for article {article_id}: {e}")
+        # Fallback to basic suggestions (simple text format)
+        suggestions_for_display = [
+            f"Article ID: {article['id']}", 
+            f"Keywords: {', '.join(article['tags'][:3])}" if article['tags'] else "No keywords found",
+            "Explore related topics and ideas"
+        ]
+    
     layout = MainLayout(
         "ARTICLE VIEW",
         article_content,
         related_articles_component,
-        TerminalSuggestionBox([f"Article ID: {article['id']}", f"Keywords: {', '.join(article['tags'][:3])}" if article['tags'] else "No keywords found"]),
+        TerminalSuggestionBox(suggestions_for_display),
     )
     return Html(
         Head(
@@ -650,24 +697,46 @@ def search_page(
         query_params=query_params
     ) if total_pages > 1 else None
     
-    # Create suggestions based on filters and results
-    suggestions = []
-    filter_applied = bool(query or content_type or keyword_list or date_from or date_to)
-    if filter_applied:
-        filter_parts = []
-        if query:
-            filter_parts.append(f"text: '{query}'")
-        if content_type:
-            filter_parts.append(f"type: {content_type}")
-        if keyword_list:
-            filter_parts.append(f"keywords: {', '.join(keyword_list)}")
-        if date_from or date_to:
-            date_range = f"{date_from or 'any'} to {date_to or 'any'}"
-            filter_parts.append(f"dates: {date_range}")
+    # Generate AI-driven suggestions based on search context
+    try:
+        search_context = {
+            'query': query,
+            'result_count': total_results,
+            'content_types': [content_type] if content_type else [],
+            'keywords': keyword_list,
+            'filters_applied': bool(query or content_type or keyword_list or date_from or date_to)
+        }
         
-        suggestions.append(f"Found {len(filtered_articles)} result(s) with filters: {'; '.join(filter_parts)}")
-    else:
-        suggestions.append("Use filters below to narrow your search or try searching for 'retro' or 'guide'.")
+        ai_suggestions = suggestion_engine.generate_suggestions('search', search_context, limit=3)
+        
+        # Use full AI suggestion objects
+        suggestions = ai_suggestions.copy()
+        
+        # Add result summary as first suggestion if we have results
+        if total_results > 0:
+            filter_applied = bool(query or content_type or keyword_list or date_from or date_to)
+            if filter_applied:
+                filter_parts = []
+                if query:
+                    filter_parts.append(f"'{query}'")
+                if content_type:
+                    filter_parts.append(f"{content_type}")
+                if keyword_list:
+                    filter_parts.append(f"{', '.join(keyword_list)}")
+                
+                result_summary = f"Found {total_results} result(s)" + (f" for {'; '.join(filter_parts)}" if filter_parts else "")
+                # Insert summary as simple text (backward compatibility)
+                suggestions.insert(0, result_summary)
+        
+    except Exception as e:
+        logger.error(f"Error generating AI suggestions for search: {e}")
+        # Fallback to basic suggestions
+        suggestions = []
+        filter_applied = bool(query or content_type or keyword_list or date_from or date_to)
+        if filter_applied:
+            suggestions.append(f"Found {total_results} result(s) with your current filters")
+        else:
+            suggestions.append("Use filters below to narrow your search or try searching for 'retro' or 'guide'.")
     
     layout_elements = [
         search_bar,
