@@ -41,14 +41,14 @@
   - [x] 3.4 Ensure clear, readable formatting for article content and metadata. Content should be hidden by default, with a button to unfold it below the other items on the page.
   - [x] 3.5 Write unit tests for article view rendering and navigation.
 
-- [ ] 4.0 Implement Related Articles and Obsidian-Style Link Navigation
+- [x] 4.0 Implement Related Articles and Obsidian-Style Link Navigation
   - [x] 4.1 Parse article content for keywords/links and render them as clickable FastHTML `A` components.
   - [x] 4.2 On click, show a list of related articles sorted by match strength.
-  - [ ] 4.3 Support navigation history for back/forward between articles and search results.
-  - [ ] 4.4 Highlight or style links for easy navigation (using retro terminal theme).
+  - [x] 4.3 Support navigation history for back/forward between articles and search results.
+  - [x] 4.4 Highlight or style links for easy navigation (using retro terminal theme).
   - [x] 4.5 Write unit tests for link navigation and related article logic.
   - [x] 4.6 Create cosine sim route in the fast api app
-  - [ ] 4.7 Use existing keyword similarity algorithm and cosine similarity from document embeddings via fastapi for finding related articles. Allow the user to toggle between them and set a preference. The default should be cosine similarity 
+  - [x] 4.7 Use existing keyword similarity algorithm and cosine similarity from document embeddings via fastapi for finding related articles. Allow the user to toggle between them and set a preference. The default should be cosine similarity 
 
 - [ ] 5.0 Add AI-Driven Suggestions for New Ideas or Questions
   - [ ] 5.1 Implement a suggestion engine in `suggestion_engine.py`. 
