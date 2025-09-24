@@ -187,6 +187,8 @@ This ensures more readable and consistent note titles in your Obsidian vault.
 
 
 ## To Do
+* Build a context of articles and chat with it
+* Content recommendations
 * DB Maintenance module
    * Update, delete
    * Rebuild
@@ -201,25 +203,12 @@ This ensures more readable and consistent note titles in your Obsidian vault.
    * how can I discover new ideas and help make connections, possibly to my writing topics
    * keyword counts, similarity
    * export data
-* Discovery module
-   * The search sucks in PG
-   * Find related content based on some input
-   * topic, title, keyword, relationship
-   * recommend content
-* Basic Unit Tests
-   * Content Manager - done
-   * Storage
-   * Models
-   * Routes
-   * Utils
-   * AI stuff
 * put constants in a database table, like default llm, dsv_kb_path, etc
    * Like Academic AI Platform
    * Use configs to update software and launch
    * Data driven build and update
    * Configs live in a database
    * API to interact with the database
-* Fix obsidian note titles, not dashes or underscore
 * Add safety feature for deletes - must enter a code as a url parameter
 * Content Manager functions
    * clean
