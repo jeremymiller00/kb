@@ -225,6 +225,12 @@ class ContentManager():
 
     def create_obsidian_note(self, json_file_path, output_directory):
         self.logger.debug(f"Creating Obsidian note from JSON file: {json_file_path}")
+
+        # Check if the file exists before trying to open it
+        if not os.path.exists(json_file_path):
+            self.logger.error(f"JSON file does not exist: {json_file_path}")
+            raise FileNotFoundError(f"JSON file not found: {json_file_path}")
+
         with open(json_file_path, 'r') as file:
             doc_data = json.load(file)
         self.logger.debug(f"Loaded JSON data: {doc_data}")

@@ -22,6 +22,13 @@ BACKEND_PID=$!
 # Wait a moment for backend to start
 sleep 3
 
+# Kill any existing process on port 5001
+if lsof -ti :5001 > /dev/null 2>&1; then
+    echo "Killing existing process on port 5001..."
+    kill -9 $(lsof -ti :5001) 2>/dev/null
+    sleep 1
+fi
+
 # Start FastHTML UI
 echo "Starting FastHTML UI..."
 uvicorn ui:app --reload --host 0.0.0.0 --port 5001 &

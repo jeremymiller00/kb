@@ -902,6 +902,10 @@ def process_text_endpoint(
                 if obsidian_path:
                     content_manager.create_obsidian_note(file_path, f"{obsidian_path}/_new-notes/")
                     logger.info(f"Obsidian note created for {file_path}")
+            except FileNotFoundError as fnf_e:
+                logger.error(f"Obsidian note creation failed - JSON file not found: {fnf_e}")
+                logger.error(f"Expected file path: {file_path}")
+                logger.error(f"Please check if the file was saved correctly during content processing")
             except Exception as obsidian_e:
                 logger.error(f"Obsidian note creation failed: {obsidian_e}")
         
@@ -983,6 +987,7 @@ def process_url_endpoint(
         
         file_type, file_path, time_now, complete_url = content_manager.get_file_path(clean_url)
         logger.info(f"Processing URL: {complete_url}, File type: {file_type}, Debug: {debug_mode}")
+        logger.info(f"Generated file path: {file_path}")
         
         # Extract content
         extractor = ExtractorFactory().get_extractor(clean_url)
@@ -1040,6 +1045,10 @@ def process_url_endpoint(
                 if obsidian_path:
                     content_manager.create_obsidian_note(file_path, f"{obsidian_path}/_new-notes/")
                     logger.info(f"Obsidian note created for {file_path}")
+            except FileNotFoundError as fnf_e:
+                logger.error(f"Obsidian note creation failed - JSON file not found: {fnf_e}")
+                logger.error(f"Expected file path: {file_path}")
+                logger.error(f"Please check if the file was saved correctly during content processing")
             except Exception as obsidian_e:
                 logger.error(f"Obsidian note creation failed: {obsidian_e}")
         
