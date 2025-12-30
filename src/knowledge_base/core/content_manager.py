@@ -318,30 +318,121 @@ class ContentManager():
         self.logger.info(f"Obsidian note created: {output_path} with title '{standardized_title}'")
         return
 
-    def clean_url(self, url: str) -> str:
+    def clean_url(self, url: str, debug: bool = False) -> str:
+        """Clean URL by removing tracking parameters while preserving functional ones.
+
+        Args:
+            url: The URL to clean
+            debug: If True, log information about stripped parameters
+
+        Returns:
+            Cleaned URL without tracking parameters
+        """
         if url.startswith('!wget'):
+            # Extract URL from wget command, removing flags
             url = url.split(' ', 1)[1].strip()
+            # Remove any trailing flags (anything after a space)
+            url = url.split(' ')[0].strip()
         else:
             url = url.split(' ', 1)[0].strip()
-        
-        # Strip UTM parameters and other tracking parameters
+
+        # Comprehensive list of tracking parameters to strip (all lowercase for case-insensitive matching)
+        tracking_params = {
+            # UTM parameters
+            'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+            'utm_id', 'utm_source_platform', 'utm_creative_format', 'utm_marketing_tactic',
+
+            # Social media tracking
+            'fbclid', 'gclid', 'msclkid', 'twclid', 'igshid',
+            '_ga', 'mc_cid', 'mc_eid',
+
+            # Referrer tracking
+            'ref', 'referrer', 'ref_src', 'ref_url',
+
+            # Analytics/Marketing
+            'aff_id', 'affiliate_id', 'campaign_id', 'source',
+            'hsctatracking', 'hsa_acc', 'hsa_cam', 'hsa_grp', 'hsa_ad', 'hsa_src',
+            'hsa_tgt', 'hsa_kw', 'hsa_mt', 'hsa_net', 'hsa_ver',
+
+            # E-commerce/Affiliate
+            'wickedid', 'yclid', 'zanpid', '_openstat', 'rb_clickid',
+
+            # Email tracking
+            'mkt_tok', 'trk_contact', 'trk_msg', 'trk_module', 'trk_sid',
+
+            # Session/Click IDs
+            'sessionid', 'clickid', '_hsenc', '_hsmi',
+
+            # Misc tracking
+            'srcid', 'feature', 'ncid', 'soc_src', 'soc_trk'
+        }
+
+        # Domain-specific rules for preserving functional parameters
+        domain_rules = {
+            'youtube.com': {'preserve': ['v', 't', 'list', 'index']},  # video ID, timestamp, playlist
+            'youtu.be': {'preserve': ['t']},  # timestamp
+            'github.com': {'preserve': ['tab', 'q', 'type', 'language']},  # UI navigation and search
+            'arxiv.org': {'preserve': ['v']},  # version parameter
+            'reddit.com': {'preserve': ['sort', 'context']},  # sorting and context
+            'twitter.com': {'preserve': ['s']},  # tweet context
+            'x.com': {'preserve': ['s']},  # tweet context
+        }
+
+        # Parse URL
         parsed = urlparse(url)
+
+        # Determine which parameters to preserve based on domain
+        preserve_params = set()
+        domain = parsed.netloc.lower()
+        for domain_pattern, rules in domain_rules.items():
+            if domain_pattern in domain:
+                preserve_params.update(rules.get('preserve', []))
+
+        # Clean query parameters
         if parsed.query:
-            # Remove tracking parameters
-            tracking_params = {
-                'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-                'fbclid', 'gclid', 'msclkid', 'twclid', 'igshid', 'ref', 'referrer'
-            }
-            
             query_params = parse_qs(parsed.query, keep_blank_values=True)
-            cleaned_params = {k: v for k, v in query_params.items() 
-                            if k.lower() not in tracking_params}
-            
-            # Reconstruct URL without tracking parameters
+
+            # Track what we're stripping for debug logging
+            stripped = {k: v for k, v in query_params.items()
+                       if k.lower() in tracking_params and k not in preserve_params}
+
+            if stripped and debug:
+                self.logger.info(f"Stripped tracking parameters from {parsed.netloc}: {list(stripped.keys())}")
+
+            # Keep only non-tracking parameters or explicitly preserved ones
+            cleaned_params = {k: v for k, v in query_params.items()
+                            if k.lower() not in tracking_params or k in preserve_params}
+
             cleaned_query = urlencode(cleaned_params, doseq=True) if cleaned_params else ''
-            url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, 
-                            parsed.params, cleaned_query, parsed.fragment))
-        
+        else:
+            cleaned_query = ''
+
+        # Clean fragment identifiers (e.g., #fbclid=...)
+        cleaned_fragment = parsed.fragment
+        if parsed.fragment:
+            # Split fragment by & to handle tracking params in fragments
+            fragment_parts = parsed.fragment.split('&')
+            cleaned_fragment_parts = []
+
+            for part in fragment_parts:
+                # Check if this part is a tracking parameter
+                is_tracking = False
+                for param in tracking_params:
+                    if part.startswith(f"{param}="):
+                        is_tracking = True
+                        if debug:
+                            self.logger.info(f"Stripped tracking from fragment: {param}")
+                        break
+
+                if not is_tracking:
+                    cleaned_fragment_parts.append(part)
+
+            cleaned_fragment = '&'.join(cleaned_fragment_parts) if cleaned_fragment_parts else ''
+
+        # Reconstruct URL without tracking parameters
+        url = urlunparse((parsed.scheme, parsed.netloc, parsed.path,
+                        parsed.params, cleaned_query, cleaned_fragment))
+
         return url
 
     def jinafy_url(self, url: str) -> tuple[str, str]:

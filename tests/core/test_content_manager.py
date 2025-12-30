@@ -605,6 +605,168 @@ def test_clean_url_with_parameters(content_manager):
     """Test clean_url with URL parameters"""
     url = "https://example.com/search?q=test&filter=all extra stuff"
     result = content_manager.clean_url(url)
-    
+
     assert result == "https://example.com/search?q=test&filter=all"
+
+
+def test_clean_url_strips_utm_parameters(content_manager):
+    """Test removal of UTM tracking parameters"""
+    url = "https://example.com/page?utm_source=twitter&utm_campaign=spring&utm_medium=social"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/page"
+    assert "utm_source" not in result
+    assert "utm_campaign" not in result
+
+
+def test_clean_url_strips_social_tracking(content_manager):
+    """Test removal of social media tracking parameters"""
+    url = "https://example.com/article?fbclid=ABC123&gclid=XYZ789"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/article"
+    assert "fbclid" not in result
+    assert "gclid" not in result
+
+
+def test_clean_url_strips_email_tracking(content_manager):
+    """Test removal of email tracking parameters"""
+    url = "https://example.com/page?mkt_tok=ABC&trk_contact=123&trk_msg=456"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/page"
+    assert "mkt_tok" not in result
+    assert "trk_contact" not in result
+
+
+def test_clean_url_preserves_youtube_functional_params(content_manager):
+    """Test that YouTube video ID and timestamp are preserved"""
+    url = "https://youtube.com/watch?v=dQw4w9WgXcQ&t=42&utm_source=share"
+    result = content_manager.clean_url(url)
+    assert "v=dQw4w9WgXcQ" in result
+    assert "t=42" in result
+    assert "utm_source" not in result
+
+
+def test_clean_url_preserves_github_functional_params(content_manager):
+    """Test that GitHub tab and search parameters are preserved"""
+    url = "https://github.com/user/repo?tab=readme&q=search&utm_source=newsletter"
+    result = content_manager.clean_url(url)
+    assert "tab=readme" in result
+    assert "q=search" in result
+    assert "utm_source" not in result
+
+
+def test_clean_url_preserves_arxiv_version(content_manager):
+    """Test that arXiv version parameter is preserved"""
+    url = "https://arxiv.org/abs/1234.5678?v=2&utm_source=email"
+    result = content_manager.clean_url(url)
+    assert "v=2" in result
+    assert "utm_source" not in result
+
+
+def test_clean_url_handles_mixed_parameters(content_manager):
+    """Test URL with mix of functional and tracking parameters"""
+    url = "https://example.com/search?page=2&utm_source=email&sort=date&fbclid=123"
+    result = content_manager.clean_url(url)
+    assert "page=2" in result
+    assert "sort=date" in result
+    assert "utm_source" not in result
+    assert "fbclid" not in result
+
+
+def test_clean_url_strips_fragment_tracking(content_manager):
+    """Test removal of tracking parameters in URL fragments"""
+    url = "https://example.com/page#section&fbclid=ABC123"
+    result = content_manager.clean_url(url)
+    assert "#section" in result
+    assert "fbclid" not in result
+
+
+def test_clean_url_preserves_clean_fragment(content_manager):
+    """Test that non-tracking fragments are preserved"""
+    url = "https://example.com/page#introduction"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/page#introduction"
+
+
+def test_clean_url_strips_affiliate_tracking(content_manager):
+    """Test removal of affiliate and e-commerce tracking"""
+    url = "https://shop.example.com/product?aff_id=123&wickedid=456&ref=newsletter"
+    result = content_manager.clean_url(url)
+    assert result == "https://shop.example.com/product"
+    assert "aff_id" not in result
+    assert "wickedid" not in result
+    assert "ref" not in result
+
+
+def test_clean_url_strips_analytics_tracking(content_manager):
+    """Test removal of analytics tracking parameters"""
+    url = "https://example.com/page?_ga=GA1.2.123&_hsenc=ABC&sessionid=xyz"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/page"
+    assert "_ga" not in result
+    assert "_hsenc" not in result
+    assert "sessionid" not in result
+
+
+def test_clean_url_handles_empty_query_after_cleaning(content_manager):
+    """Test URL that has only tracking parameters"""
+    url = "https://example.com/page?utm_source=twitter&fbclid=123"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/page"
+    assert "?" not in result
+
+
+def test_clean_url_preserves_reddit_functional_params(content_manager):
+    """Test that Reddit sort and context parameters are preserved"""
+    url = "https://reddit.com/r/test/comments/abc?sort=top&context=3&utm_source=share"
+    result = content_manager.clean_url(url)
+    assert "sort=top" in result
+    assert "context=3" in result
+    assert "utm_source" not in result
+
+
+def test_clean_url_with_debug_logging(content_manager):
+    """Test that debug mode logs stripped parameters"""
+    url = "https://example.com/page?utm_source=twitter&fbclid=ABC"
+    result = content_manager.clean_url(url, debug=True)
+
+    # Verify the URL was cleaned
+    assert result == "https://example.com/page"
+
+    # Verify logger was called (check if info was called)
+    assert content_manager.logger.info.called
+
+
+def test_clean_url_case_insensitive_param_matching(content_manager):
+    """Test that tracking parameter matching is case-insensitive"""
+    url = "https://example.com/page?UTM_SOURCE=twitter&FbClId=123"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/page"
+    assert "UTM_SOURCE" not in result
+    assert "FbClId" not in result
+
+
+def test_clean_url_preserves_youtu_be_timestamp(content_manager):
+    """Test that youtu.be short URLs preserve timestamp"""
+    url = "https://youtu.be/dQw4w9WgXcQ?t=42&utm_source=share"
+    result = content_manager.clean_url(url)
+    assert "t=42" in result
+    assert "utm_source" not in result
+
+
+def test_clean_url_complex_fragment_cleaning(content_manager):
+    """Test cleaning of complex fragments with multiple parameters"""
+    url = "https://example.com/page#section&utm_campaign=test&ref=email"
+    result = content_manager.clean_url(url)
+    assert "#section" in result
+    assert "utm_campaign" not in result
+    assert "ref" not in result
+
+
+def test_clean_url_strips_hubspot_tracking(content_manager):
+    """Test removal of HubSpot tracking parameters"""
+    url = "https://example.com/page?hsCtaTracking=ABC&hsa_cam=123&hsa_grp=456"
+    result = content_manager.clean_url(url)
+    assert result == "https://example.com/page"
+    assert "hsCtaTracking" not in result
+    assert "hsa_cam" not in result
 
