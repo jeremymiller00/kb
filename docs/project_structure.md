@@ -12,7 +12,6 @@ knowledge-base-project-root/
 │
 ├── src/                       # Source code
 │   ├── app.py                 # FastAPI application entry point
-│   ├── cli.py                 # Command Line Interface entry point
 │   │
 │   └── knowledge_base/        # Main application package
 │       ├── __init__.py
@@ -91,7 +90,7 @@ knowledge-base-project-root/
 
 ### Key Aspects of the Structure:
 -   **`src/` Directory**: Contains all application source code.
-    -   **`app.py` & `cli.py`**: Entry points for the FastAPI web application and the command-line interface, respectively.
+    -   **`app.py`**: Entry point for the FastAPI web application.
     -   **`knowledge_base/`**: The main Python package for the application.
         -   **`ai/`**: Modules related to artificial intelligence, including LLM interactions and embedding management.
         -   **`config_manager.py`**: Manages global application configurations, such as default model choices.

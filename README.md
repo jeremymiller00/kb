@@ -60,88 +60,10 @@ uvicorn ui:app --reload --host 0.0.0.0 --port 5001
 python src/knowledge_base/ui/main.py
 ```
 
-## CLI
-All CLI commands should be run using `python src/cli.py ...`.
-
-### Process URL
-```sh
-python src/cli.py process https://example.com
-```
-
-### Debug mode: do not save
-```sh
-python src/cli.py process -d https://example.com
-```
-
-### Process batch of URLs
-```sh
-python src/cli.py process batch <urls.txt>
-```
-
-### List and browse data files - TO BE BUILT
-```sh
-# List all data files (default shows 20 most recent)
-python src/cli.py data list
-
-# Filter by file type
-python src/cli.py data list --type github
-
-# Show only files from last 7 days
-python src/cli.py data list --days 7
-
-# View file details in pretty format
-python src/cli.py data view /path/to/file.json
-
-# View raw JSON content
-python src/cli.py data view /path/to/file.json --format raw
-
-# View as markdown
-python src/cli.py data view /path/to/file.json --format markdown
-
-# Show stats about knowledge base files
-python src/cli.py data stats
-
-# List all file types
-python src/cli.py data types
-```
-
+## Database Setup
 ### Set up database
 ```sh
 python scripts/build_db.py
-```
-
-### Load Processed Data into Database
-To load processed JSON files (e.g., from a directory specified by `DATA_DIR` or a custom path) into the database:
-```sh
-python src/cli.py db load
-```
-**Options:**
--   `--dir DIRECTORY`: Specify the directory containing JSON files to load. Defaults to the `DATA_DIR` environment variable.
--   `--debug`: Use the test database connection string (`TEST_DB_CONN_STRING`).
--   `--skip-duplicates` / `--no-skip-duplicates`: Skip loading if a record with the same URL and timestamp already exists (default is to skip).
-
-Example:
-```sh
-python src/cli.py db load --dir /path/to/my/json_data --debug
-```
-
-### Query Database - BROKEN
-To search for content within the database:
-```sh
-python src/cli.py db query "your search query text" [options]
-```
-**Arguments:**
--   `query_text`: The text to search for in document content and summaries.
-
-**Options:**
--   `--keywords TEXT`: Comma-separated keywords to filter by (e.g., "ai,python").
--   `--type TEXT`: Filter by document type (e.g., "github", "arxiv", "web").
--   `--limit INTEGER`: Maximum number of results to return (default: 10).
--   `--debug`: Use the test database connection string.
-
-Example:
-```sh
-python src/cli.py db query "transformer models" --keywords "nlp,deep-learning" --type arxiv --limit 5
 ```
 
 # DANGER ZONE
