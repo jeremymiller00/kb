@@ -34,9 +34,17 @@ from ..storage.database import Database
 
 
 class ContentManager():
-    def __init__(self, logger, db_connection_string=None):
+    def __init__(self, logger, db_connection_string=None, data_dir=None):
         self.logger = logger
-        self.db = Database(connection_string=db_connection_string, logger=logger) if db_connection_string else None
+        # Initialize DB if data_dir or db_connection_string explicitly provided
+        if data_dir:
+            self.db = Database(data_dir=data_dir, logger=logger)
+        elif db_connection_string:
+            # Legacy callers passing connection_string: use DATA_DIR env var instead
+            resolved_dir = os.getenv('DATA_DIR')
+            self.db = Database(data_dir=resolved_dir, logger=logger) if resolved_dir else None
+        else:
+            self.db = None
 
     def get_file_path(self, url, force_general=False):
         self.logger.debug(f"Creating file path for URL: {url}")

@@ -1,470 +1,214 @@
 '''
-PostgreSQL database operations for the knowledge base.
+JSON-file-backed database for the knowledge base.
+Loads all .json files from a data directory into memory for querying.
 '''
 
 import os
+import json
+import glob
 from typing import Dict, List, Any, Optional
-import psycopg2
-from psycopg2.extras import Json, execute_values
+
+import numpy as np
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 class Database:
-    """Handles database operations for the knowledge base."""
-    
+    """Handles database operations backed by JSON files on disk."""
+
     def __init__(
         self,
-        connection_string: str = os.getenv('DB_CONN_STRING'),
-        enable_caching: bool = True,
-        max_connections: int = 5,
-        logger=None
+        data_dir: str = os.getenv('DATA_DIR'),
+        logger=None,
+        **kwargs
     ):
-        """
-        Initialize database connection and ensure required setup.
-        
-        Args:
-            connection_string: PostgreSQL connection string
-            enable_caching: Whether to enable query result caching
-            max_connections: Maximum number of concurrent connections
-        """
         self.logger = logger
-        self.connection_string = connection_string
-        self.enable_caching = enable_caching
-        self._connection = None
-        self._setup_database()
-    
-    def _get_connection(self) -> psycopg2.extensions.connection:
-        """Get a database connection, creating it if necessary."""
-        if self._connection is None or self._connection.closed:
-            self._connection = psycopg2.connect(self.connection_string)
-        self.logger.info("Database Connection Established")
-        return self._connection
-    
-    def _setup_database(self) -> None:
-        """Set up database tables and extensions if they don't exist."""
-        # First ensure the database exists
-        base_conn = psycopg2.connect(
-            " ".join(self.connection_string.split()[:-1] + ["dbname=postgres"])
-        )
-        base_conn.autocommit = True
-        
-        try:
-            with base_conn.cursor() as cur:
-                # Check if database exists
-                dbname = self.connection_string.split("/")[-1]
-                cur.execute(
-                    f"SELECT 1 FROM pg_database WHERE datname='{dbname}'"
-                )
-                if not cur.fetchone():
-                    cur.execute(f'CREATE DATABASE {dbname}')
-        finally:
-            base_conn.close()
-        
-        # Now set up tables in the knowledge_base database
-        conn = self._get_connection()
-        try:
-            with conn.cursor() as cur:
-                # Enable vector extension
-                cur.execute('CREATE EXTENSION IF NOT EXISTS vector')
-                
-                # Create documents table
-                cur.execute('''
-                    CREATE TABLE IF NOT EXISTS documents (
-                        id SERIAL PRIMARY KEY,
-                        url TEXT,
-                        type TEXT,
-                        timestamp BIGINT,
-                        content TEXT,
-                        summary TEXT,
-                        embeddings vector(1536),
-                        obsidian_markdown TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
-                
-                # Create keywords table
-                cur.execute('''
-                    CREATE TABLE IF NOT EXISTS keywords (
-                        id SERIAL PRIMARY KEY,
-                        document_id INTEGER REFERENCES documents(id),
-                        keyword TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
-                
-                # Create necessary indexes
-                cur.execute(
-                    'CREATE INDEX IF NOT EXISTS idx_documents_type ON documents(type)'
-                )
-                cur.execute(
-                    'CREATE INDEX IF NOT EXISTS idx_keywords_keyword ON keywords(keyword)'
-                )
-                cur.execute(
-                    'CREATE INDEX IF NOT EXISTS idx_embeddings ON documents USING hnsw (embeddings vector_cosine_ops)'
-                )
-                
-                conn.commit()
-        except Exception as e:
-            self.logger.error(f"Error setting up database: {e}")
-            conn.rollback()
-            raise
-        self.logger.info("Database setup complete")
-    
+        self.data_dir = data_dir
+        self._documents = {}  # id -> doc dict
+        self._next_id = 1
+        self._id_to_filepath = {}  # id -> file path on disk
+        self._load_all()
+
+    def _load_all(self) -> None:
+        """Walk data_dir, load all .json files into memory."""
+        if not self.data_dir or not os.path.isdir(self.data_dir):
+            self.logger.warning(f"Data directory not found or not set: {self.data_dir}")
+            return
+
+        json_files = sorted(glob.glob(os.path.join(self.data_dir, '**', '*.json'), recursive=True))
+        for filepath in json_files:
+            try:
+                with open(filepath, 'r') as f:
+                    data = json.load(f)
+                doc_id = self._next_id
+                self._next_id += 1
+                doc = self._make_doc(doc_id, data)
+                self._documents[doc_id] = doc
+                self._id_to_filepath[doc_id] = filepath
+            except Exception as e:
+                if self.logger:
+                    self.logger.warning(f"Failed to load {filepath}: {e}")
+
+        if self.logger:
+            self.logger.info(f"Loaded {len(self._documents)} documents from {self.data_dir}")
+
+    def _make_doc(self, doc_id: int, data: dict) -> dict:
+        """Create a standardized document dict from raw JSON data."""
+        return {
+            'id': doc_id,
+            'url': data.get('url'),
+            'type': data.get('type'),
+            'timestamp': data.get('timestamp'),
+            'content': data.get('content'),
+            'summary': data.get('summary'),
+            'embeddings': data.get('embeddings'),
+            'obsidian_markdown': data.get('obsidian_markdown'),
+            'keywords': data.get('keywords', []),
+        }
+
     def store_content(self, content: Dict[str, Any]) -> str:
-        """
-        Store processed content in the database.
-        
-        Args:
-            content: Dictionary containing document data
-            
-        Returns:
-            str: ID of the stored document
-        """
-        conn = self._get_connection()
-        try:
-            with conn.cursor() as cur:
-                # Insert document
-                cur.execute('''
-                    INSERT INTO documents 
-                    (url, type, timestamp, content, summary, embeddings, obsidian_markdown)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                ''', (
-                    content.get('url'),
-                    content.get('type'),
-                    content.get('timestamp'),
-                    content.get('content'),
-                    content.get('summary'),
-                    content.get('embeddings'),
-                    content.get('obsidian_markdown')
-                ))
-                
-                document_id = cur.fetchone()[0]
-                
-                # Insert keywords if present
-                if 'keywords' in content:
-                    keywords_data = [
-                        (document_id, keyword) 
-                        for keyword in content['keywords']
-                    ]
-                    execute_values(
-                        cur,
-                        'INSERT INTO keywords (document_id, keyword) VALUES %s',
-                        keywords_data
-                    )
-                
-                conn.commit()
-                self.logger.info("Content stored in database")
-                self.logger.debug(f"Content stored in database: {content}")
-                return str(document_id)
-                
-        except Exception as e:
-            self.logger.error(f"Error storing content: {e}")
-            conn.rollback()
-            raise
-    
+        doc_id = self._next_id
+        self._next_id += 1
+        doc = self._make_doc(doc_id, content)
+        self._documents[doc_id] = doc
+
+        # Write JSON file to data_dir
+        if self.data_dir:
+            timestamp = content.get('timestamp', '')
+            filename = f"doc_{doc_id}_{timestamp}.json"
+            filepath = os.path.join(self.data_dir, filename)
+            raw = {k: v for k, v in content.items()}
+            with open(filepath, 'w') as f:
+                json.dump(raw, f, indent=4)
+            self._id_to_filepath[doc_id] = filepath
+
+        if self.logger:
+            self.logger.info("Content stored in database")
+        return str(doc_id)
+
     def get_content(self, content_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve content by ID.
-        
-        Args:
-            content_id: Document ID to retrieve
-            
-        Returns:
-            Optional[Dict[str, Any]]: Document data if found
-        """
-        conn = self._get_connection()
-        try:
-            with conn.cursor() as cur:
-                # Get document
-                cur.execute('''
-                    SELECT 
-                        id, url, type, timestamp, content, summary, 
-                        embeddings, obsidian_markdown
-                    FROM documents
-                    WHERE id = %s
-                ''', (content_id,))
-                
-                doc = cur.fetchone()
-                if not doc:
-                    return None
-                
-                # Get keywords
-                cur.execute(
-                    'SELECT keyword FROM keywords WHERE document_id = %s',
-                    (content_id,)
-                )
-                keywords = [row[0] for row in cur.fetchall()]
-                
-                return {
-                    'id': doc[0],
-                    'url': doc[1],
-                    'type': doc[2],
-                    'timestamp': doc[3],
-                    'content': doc[4],
-                    'summary': doc[5],
-                    'embeddings': doc[6],
-                    'obsidian_markdown': doc[7],
-                    'keywords': keywords
-                }
-                
-        except Exception as e:
-            self.logger.error(f"Error retrieving content: {e}")
-            raise
-    
+        doc_id = int(content_id)
+        doc = self._documents.get(doc_id)
+        if doc:
+            return dict(doc)
+        return None
+
     def search_content(
         self,
         query: Dict[str, Any],
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        Search for content based on specified criteria.
-        
-        Args:
-            query: Search parameters
-            limit: Maximum number of results to return
-            
-        Returns:
-            List[Dict[str, Any]]: Matching documents
-        """
-        conn = self._get_connection()
-        try:
-            with conn.cursor() as cur:
-                conditions = []
-                params = []
-                
-                # Handle different query types
-                if 'keywords' in query:
-                    conditions.append('''
-                        EXISTS (
-                            SELECT 1 FROM keywords k 
-                            WHERE k.document_id = d.id 
-                            AND EXISTS (
-                                SELECT 1 FROM unnest(%s) AS search_keyword 
-                                WHERE LOWER(k.keyword) = LOWER(search_keyword)
-                            )
-                        )
-                    ''')
-                    params.append(query['keywords'])
-                
-                if 'type' in query:
-                    conditions.append('d.type = %s')
-                    params.append(query['type'])
-                
-                if 'text_search' in query:
-                    conditions.append('''
-                        to_tsvector('english', d.content || ' ' || d.summary) @@ 
-                        to_tsquery('english', %s)
-                    ''')
-                    params.append(query['text_search'])
-                
-                if 'embedding' in query:
-                    conditions.append('d.embeddings <-> %s < %s')
-                    params.extend([query['embedding'], query.get('similarity_threshold', 0.8)])
-                
-                # Construct and execute query
-                base_query = '''
-                    SELECT DISTINCT
-                        d.id, d.url, d.type, d.timestamp, d.content, 
-                        d.summary, d.embeddings, d.obsidian_markdown
-                    FROM documents d
-                '''
-                
-                where_clause = ' AND '.join(conditions) if conditions else 'TRUE'
-                full_query = f"{base_query} WHERE {where_clause} LIMIT %s"
-                params.append(limit)
-                
-                cur.execute(full_query, params)
-                results = []
-                
-                for doc in cur.fetchall():
-                    # Get keywords for each document
-                    cur.execute(
-                        'SELECT keyword FROM keywords WHERE document_id = %s',
-                        (doc[0],)
-                    )
-                    keywords = [row[0] for row in cur.fetchall()]
-                    
-                    results.append({
-                        'id': doc[0],
-                        'url': doc[1],
-                        'type': doc[2],
-                        'timestamp': doc[3],
-                        'content': doc[4],
-                        'summary': doc[5],
-                        'embeddings': doc[6],
-                        'obsidian_markdown': doc[7],
-                        'keywords': keywords
-                    })
-                
-                return results
-   
-        except Exception as e:
-            self.logger.error(f"Error searching content: {e}")
-            raise
+        results = list(self._documents.values())
 
-    def find_similar_documents(self, source_embedding: List[float], limit: int = 20, exclude_id: int = None) -> List[Dict[str, Any]]:
-        """
-        Find documents similar to the given embedding using cosine similarity.
-        
-        Args:
-            source_embedding: The embedding vector to find similar documents for
-            limit: Maximum number of similar documents to return
-            exclude_id: Document ID to exclude from results (typically the source document)
-            
-        Returns:
-            List[Dict[str, Any]]: Similar documents ordered by cosine similarity
-        """
-        conn = self._get_connection()
-        try:
-            with conn.cursor() as cur:
-                # Build query with optional exclusion
-                exclude_clause = "AND d.id != %s" if exclude_id else ""
-                
-                query = f'''
-                    SELECT DISTINCT
-                        d.id, d.url, d.type, d.timestamp, d.content, 
-                        d.summary, d.embeddings, d.obsidian_markdown,
-                        d.embeddings <-> %s AS distance
-                    FROM documents d
-                    WHERE d.embeddings IS NOT NULL {exclude_clause}
-                    ORDER BY d.embeddings <-> %s
-                    LIMIT %s
-                '''
-                
-                params = [source_embedding]
-                if exclude_id:
-                    params.append(exclude_id)
-                params.extend([source_embedding, limit])
-                
-                cur.execute(query, params)
-                results = []
-                
-                for doc in cur.fetchall():
-                    # Get keywords for each document
-                    cur.execute(
-                        'SELECT keyword FROM keywords WHERE document_id = %s',
-                        (doc[0],)
-                    )
-                    keywords = [row[0] for row in cur.fetchall()]
-                    
-                    results.append({
-                        'id': doc[0],
-                        'url': doc[1],
-                        'type': doc[2],
-                        'timestamp': doc[3],
-                        'content': doc[4],
-                        'summary': doc[5],
-                        'embeddings': doc[6],
-                        'obsidian_markdown': doc[7],
-                        'keywords': keywords,
-                        'similarity_distance': float(doc[8])  # Include distance for debugging
-                    })
-                
-                return results
-                
-        except Exception as e:
-            self.logger.error(f"Error finding similar documents: {e}")
-            raise
+        if 'type' in query:
+            qtype = query['type']
+            results = [d for d in results if d.get('type') == qtype]
+
+        if 'keywords' in query:
+            search_kws = {k.lower() for k in query['keywords']}
+            results = [
+                d for d in results
+                if search_kws & {k.lower() for k in (d.get('keywords') or [])}
+            ]
+
+        if 'text_search' in query:
+            terms = query['text_search'].lower().replace(' & ', ' ').split()
+            def matches(d):
+                text = ((d.get('content') or '') + ' ' + (d.get('summary') or '')).lower()
+                return all(t in text for t in terms)
+            results = [d for d in results if matches(d)]
+
+        if 'embedding' in query:
+            threshold = query.get('similarity_threshold', 0.8)
+            query_emb = np.array(query['embedding'], dtype=np.float32)
+            query_norm = np.linalg.norm(query_emb)
+            if query_norm > 0:
+                filtered = []
+                for d in results:
+                    emb = d.get('embeddings')
+                    if emb:
+                        doc_emb = np.array(emb, dtype=np.float32)
+                        doc_norm = np.linalg.norm(doc_emb)
+                        if doc_norm > 0:
+                            sim = np.dot(query_emb, doc_emb) / (query_norm * doc_norm)
+                            if sim >= threshold:
+                                filtered.append(d)
+                results = filtered
+
+        return [dict(d) for d in results[:limit]]
+
+    def find_similar_documents(
+        self,
+        source_embedding: List[float],
+        limit: int = 20,
+        exclude_id: int = None
+    ) -> List[Dict[str, Any]]:
+        source_emb = np.array(source_embedding, dtype=np.float32)
+        source_norm = np.linalg.norm(source_emb)
+        if source_norm == 0:
+            return []
+
+        scored = []
+        for doc in self._documents.values():
+            if exclude_id and doc['id'] == exclude_id:
+                continue
+            emb = doc.get('embeddings')
+            if not emb:
+                continue
+            doc_emb = np.array(emb, dtype=np.float32)
+            doc_norm = np.linalg.norm(doc_emb)
+            if doc_norm == 0:
+                continue
+            similarity = float(np.dot(source_emb, doc_emb) / (source_norm * doc_norm))
+            # pgvector uses cosine distance (1 - similarity), keep same interface
+            distance = 1.0 - similarity
+            scored.append((distance, doc))
+
+        scored.sort(key=lambda x: x[0])
+        results = []
+        for distance, doc in scored[:limit]:
+            d = dict(doc)
+            d['similarity_distance'] = distance
+            results.append(d)
+        return results
 
     def update_content(
         self,
         content_id: str,
         updates: Dict[str, Any]
     ) -> bool:
-        """
-        Update existing content in the database.
-        
-        Args:
-            content_id: ID of document to update
-            updates: Fields to update and their new values
-            
-        Returns:
-            bool: True if successful
-        """
-        conn = self._get_connection()
-        try:
-            with conn.cursor() as cur:
-                # Update document fields
-                fields = []
-                values = []
-                for key, value in updates.items():
-                    if key != 'keywords':
-                        fields.append(f"{key} = %s")
-                        values.append(value)
-                
-                if fields:
-                    values.append(content_id)
-                    query = f'''
-                        UPDATE documents 
-                        SET {", ".join(fields)}, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = %s
-                    '''
-                    cur.execute(query, values)
-                
-                # Update keywords if present
-                if 'keywords' in updates:
-                    # Remove old keywords
-                    cur.execute(
-                        'DELETE FROM keywords WHERE document_id = %s',
-                        (content_id,)
-                    )
-                    # Insert new keywords
-                    keywords_data = [
-                        (content_id, keyword) 
-                        for keyword in updates['keywords']
-                    ]
-                    execute_values(
-                        cur,
-                        'INSERT INTO keywords (document_id, keyword) VALUES %s',
-                        keywords_data
-                    )
-                
-                conn.commit()
-                return True
-                
-        except Exception as e:
-            self.logger.error(f"Error updating content: {e}")
-            conn.rollback()
-            raise
-    
-    def delete_content(self, content_id: str) -> bool:
-        """
-        Delete content from the database.
-        
-        Args:
-            content_id: ID of document to delete
-            
-        Returns:
-            bool: True if successful
-        """
-        conn = self._get_connection()
-        try:
-            with conn.cursor() as cur:
-                # Delete keywords first (due to foreign key)
-                cur.execute(
-                    'DELETE FROM keywords WHERE document_id = %s',
-                    (content_id,)
-                )
-                # Delete document
-                cur.execute(
-                    'DELETE FROM documents WHERE id = %s',
-                    (content_id,)
-                )
-                conn.commit()
-                return True
-                
-        except Exception as e:
-            self.logger.error(f"Error deleting content: {e}")
-            conn.rollback()
-            raise
-    
-    def close(self) -> None:
-        """Close the database connection."""
-        if self._connection is not None:
-            self._connection.close()
-            self._connection = None
+        doc_id = int(content_id)
+        doc = self._documents.get(doc_id)
+        if not doc:
+            return False
 
+        for key, value in updates.items():
+            if key in doc:
+                doc[key] = value
+
+        # Write updated JSON to disk
+        filepath = self._id_to_filepath.get(doc_id)
+        if filepath and os.path.exists(filepath):
+            raw = {k: v for k, v in doc.items() if k not in ('id', 'similarity_distance')}
+            with open(filepath, 'w') as f:
+                json.dump(raw, f, indent=4)
+
+        return True
+
+    def delete_content(self, content_id: str) -> bool:
+        doc_id = int(content_id)
+        if doc_id not in self._documents:
+            return False
+
+        del self._documents[doc_id]
+
+        filepath = self._id_to_filepath.pop(doc_id, None)
+        if filepath and os.path.exists(filepath):
+            os.remove(filepath)
+
+        return True
+
+    def close(self) -> None:
+        """No-op for JSON file backend."""
+        pass

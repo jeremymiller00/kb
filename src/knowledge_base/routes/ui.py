@@ -26,8 +26,6 @@ from ..core.content_manager import ContentManager
 from ..extractors.extractor_factory import ExtractorFactory
 from ..ai.llm_factory import LLMFactory
 from ..ai.suggestion_engine import SuggestionEngine
-from ..storage.database import Database
-
 app, rt = fast_app()
 
 # Initialize logger and ContentManager
@@ -39,9 +37,9 @@ if not logger.handlers:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-# Initialize ContentManager with database connection
-db_connection_string = os.getenv('DB_CONN_STRING')
-content_manager = ContentManager(logger, db_connection_string) if db_connection_string else None
+# Initialize ContentManager with data directory
+data_dir = os.getenv('DATA_DIR')
+content_manager = ContentManager(logger, data_dir=data_dir) if data_dir else None
 
 # Initialize SuggestionEngine
 suggestion_engine = SuggestionEngine(LLMFactory(), content_manager)
@@ -875,11 +873,9 @@ def process_text_endpoint(
                 obsidian_markdown=obsidian_markdown
             )
             
-            # Save to database
+            # Reload into in-memory store so it's immediately searchable
             try:
-                conn_string = os.getenv('DB_CONN_STRING')
-                if conn_string:
-                    db = Database(logger=logger, connection_string=conn_string)
+                if content_manager and content_manager.db:
                     db_record_data = {
                         'url': stored_url,
                         'type': file_type,
@@ -890,12 +886,11 @@ def process_text_endpoint(
                         'obsidian_markdown': obsidian_markdown,
                         'keywords': keywords if isinstance(keywords, list) else []
                     }
-                    record_id = db.store_content(db_record_data)
-                    db.close()
-                    logger.info(f"Record {record_id} saved to database")
+                    record_id = content_manager.db.store_content(db_record_data)
+                    logger.info(f"Record {record_id} added to in-memory store")
             except Exception as db_e:
-                logger.error(f"Database save failed: {db_e}")
-            
+                logger.error(f"In-memory store update failed: {db_e}")
+
             # Create Obsidian note
             try:
                 obsidian_path = os.getenv('DSV_KB_PATH')
@@ -908,7 +903,7 @@ def process_text_endpoint(
                 logger.error(f"Please check if the file was saved correctly during content processing")
             except Exception as obsidian_e:
                 logger.error(f"Obsidian note creation failed: {obsidian_e}")
-        
+
         # Create success page
         display_title = title if title else f"Text Content ({content_hash})"
         success_content = Div(
@@ -1018,11 +1013,9 @@ def process_url_endpoint(
                 obsidian_markdown=obsidian_markdown
             )
             
-            # Save to database
+            # Reload into in-memory store so it's immediately searchable
             try:
-                conn_string = os.getenv('DB_CONN_STRING')
-                if conn_string:
-                    db = Database(logger=logger, connection_string=conn_string)
+                if content_manager and content_manager.db:
                     db_record_data = {
                         'url': complete_url,
                         'type': file_type,
@@ -1033,11 +1026,10 @@ def process_url_endpoint(
                         'obsidian_markdown': obsidian_markdown,
                         'keywords': keywords if isinstance(keywords, list) else []
                     }
-                    record_id = db.store_content(db_record_data)
-                    db.close()
-                    logger.info(f"Record {record_id} saved to database")
+                    record_id = content_manager.db.store_content(db_record_data)
+                    logger.info(f"Record {record_id} added to in-memory store")
             except Exception as db_e:
-                logger.error(f"Database save failed: {db_e}")
+                logger.error(f"In-memory store update failed: {db_e}")
             
             # Create Obsidian note
             try:
